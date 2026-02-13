@@ -5,3 +5,5 @@ python-dotenv
 groq
 pdfminer.six
 pypdfium2
+streamlit-mic-recorder
+gtts
