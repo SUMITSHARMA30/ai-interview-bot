@@ -1,15 +1,15 @@
 import streamlit as st
+import tempfile
+import os
 from resume_parser import extract_text
 from ai_engine import generate_question
 from evaluator import evaluate_answer
 from streamlit_mic_recorder import mic_recorder
-import tempfile
 from tts_engine import text_to_speech
-
 from groq import Groq
-import os
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+st.write("🔥 PHASE 2 DEPLOYED SUCCESSFULLY")
 
 def transcribe_audio(audio_path):
     with open(audio_path, "rb") as f:
