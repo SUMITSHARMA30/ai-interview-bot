@@ -2,6 +2,11 @@ import streamlit as st
 from resume_parser import extract_text
 from ai_engine import generate_question
 from evaluator import evaluate_answer
+from streamlit_mic_recorder import mic_recorder
+import tempfile
+from speech_to_text import transcribe_audio
+from tts_engine import text_to_speech
+
 
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
 
