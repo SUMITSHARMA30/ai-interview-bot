@@ -4,8 +4,20 @@ from ai_engine import generate_question
 from evaluator import evaluate_answer
 from streamlit_mic_recorder import mic_recorder
 import tempfile
-from speech_to_text import transcribe_audio
 from tts_engine import text_to_speech
+
+from groq import Groq
+import os
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+def transcribe_audio(audio_path):
+    with open(audio_path, "rb") as f:
+        transcription = client.audio.transcriptions.create(
+            file=f,
+            model="whisper-large-v3"
+        )
+    return transcription.text
 
 
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
