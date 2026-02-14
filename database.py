@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from datetime import datetime
 
 DB_NAME = "interview_reports.db"
@@ -15,13 +16,10 @@ def init_db():
         role TEXT,
         difficulty TEXT,
         interview_type TEXT,
-        mode TEXT,
-        total_questions INTEGER,
-        avg_score REAL,
+        overall_score REAL,
         verdict TEXT,
-        chat TEXT,
-        created_at TEXT,
-        pdf BLOB
+        report_json TEXT,
+        created_at TEXT
     )
     """)
 
@@ -29,49 +27,56 @@ def init_db():
     conn.close()
 
 
-def save_report(candidate_name, role, difficulty, interview_type, mode, total_questions,
-                avg_score, verdict, chat, pdf_bytes):
-
+def save_report(candidate_name, role, difficulty, interview_type, overall_score, verdict, report_json):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     cursor.execute("""
     INSERT INTO reports (
-        candidate_name, role, difficulty, interview_type, mode,
-        total_questions, avg_score, verdict, chat, created_at, pdf
+        candidate_name, role, difficulty, interview_type,
+        overall_score, verdict, report_json, created_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        candidate_name, role, difficulty, interview_type, mode,
-        total_questions, avg_score, verdict, str(chat),
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        pdf_bytes
+        candidate_name,
+        role,
+        difficulty,
+        interview_type,
+        overall_score,
+        verdict,
+        json.dumps(report_json),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
 
     conn.commit()
     conn.close()
 
 
-def fetch_reports():
+def fetch_all_reports():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, candidate_name, role, difficulty, interview_type, mode, total_questions, avg_score, verdict, created_at FROM reports ORDER BY id DESC")
+    cursor.execute("""
+    SELECT id, candidate_name, role, difficulty, interview_type,
+           overall_score, verdict, created_at
+    FROM reports
+    ORDER BY id DESC
+    """)
+
     rows = cursor.fetchall()
-
-    conn.close()
-    return rows
-
-
-def fetch_pdf(report_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT pdf FROM reports WHERE id=?", (report_id,))
-    row = cursor.fetchone()
-
     conn.close()
 
-    if row:
-        return row[0]
-    return None
+    reports = []
+    for row in rows:
+        reports.append({
+            "ID": row[0],
+            "Candidate": row[1],
+            "Role": row[2],
+            "Difficulty": row[3],
+            "Interview Type": row[4],
+            "Score": row[5],
+            "Verdict": row[6],
+            "Created At": row[7]
+        })
+
+    return reports

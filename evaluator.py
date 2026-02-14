@@ -2,57 +2,63 @@ from groq import Groq
 from dotenv import load_dotenv
 import os
 import json
-import re
 
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-# ---------------- JSON CLEANER ----------------
-def extract_json(text):
-    """
-    Extract JSON object from messy LLM output safely.
-    """
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return match.group()
-    return None
+def extract_json(text: str):
+    if not text:
+        return None
+
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start == -1 or end == -1 or end <= start:
+        return None
+
+    return text[start:end+1].strip()
 
 
 def clamp_score(x):
-    """
-    Clamp score between 0 and 10
-    """
     try:
         x = float(x)
-        if x < 0:
-            return 0
-        if x > 10:
-            return 10
-        return round(x, 2)
+        return max(0, min(10, round(x, 2)))
     except:
         return 0
 
 
-# ---------------- FULL INTERVIEW EVALUATOR ----------------
+def normalize_verdict(verdict: str):
+    if not verdict:
+        return "Maybe"
+
+    verdict = verdict.strip().lower()
+
+    if "strong" in verdict and "hire" in verdict:
+        return "Strong Hire"
+    if verdict == "hire" or "yes" in verdict:
+        return "Hire"
+    if "no" in verdict or "reject" in verdict:
+        return "No Hire"
+    if "maybe" in verdict:
+        return "Maybe"
+
+    return "Maybe"
+
+
 def evaluate_full_interview(qa_list, role="SDE", difficulty="Medium", interview_type="Technical"):
-    """
-    Evaluates the entire interview at the end.
-    Returns a structured report JSON.
-    """
 
     if not qa_list or len(qa_list) == 0:
         return {"error": "No interview data found. qa_list is empty."}
 
-    # Convert Q&A list into readable transcript
     transcript = ""
     for i, qa in enumerate(qa_list, start=1):
         transcript += f"\nQ{i}: {qa.get('question','')}\n"
         transcript += f"A{i}: {qa.get('answer','')}\n"
 
     prompt = f"""
-You are a professional MAANG interviewer evaluator.
+You are a professional MAANG interview evaluator.
 
 Interview Settings:
 Role: {role}
@@ -85,70 +91,69 @@ Return STRICT JSON ONLY in this format:
   ]
 }}
 
-IMPORTANT RULES:
+RULES:
 - Output ONLY valid JSON (no markdown, no extra text).
-- overall_score must be numeric (0-10).
-- Each question must have its own score.
-- Ideal answers must match role + difficulty.
-- If answer is empty or wrong, score should be low.
 - Verdict must be one of: Strong Hire, Hire, Maybe, No Hire.
+- overall_score must be numeric (0-10).
+- Each question must have score.
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "Return only valid JSON. No markdown. No explanation."},
+            {"role": "system", "content": "Return only JSON. No markdown."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2
     )
 
-    text = response.choices[0].message.content.strip()
-    json_text = extract_json(text)
+    raw_text = response.choices[0].message.content.strip()
+    json_text = extract_json(raw_text)
 
     if not json_text:
-        return {"error": "Invalid JSON returned", "raw": text}
+        return {"error": "Invalid JSON returned", "raw": raw_text}
 
     try:
         data = json.loads(json_text)
 
-        # Clamp overall score
         data["overall_score"] = clamp_score(data.get("overall_score", 0))
+        data["verdict"] = normalize_verdict(data.get("verdict", "Maybe"))
 
-        # Ensure verdict exists
-        if "verdict" not in data:
-            data["verdict"] = "Unknown"
+        data["summary_feedback"] = str(data.get("summary_feedback", "")).strip()
+        data["improvement_plan"] = str(data.get("improvement_plan", "")).strip()
 
-        # Ensure summary feedback exists
-        if "summary_feedback" not in data:
-            data["summary_feedback"] = ""
-
-        # Ensure improvement plan exists
-        if "improvement_plan" not in data:
-            data["improvement_plan"] = ""
-
-        # Ensure question_wise exists
         if "question_wise" not in data or not isinstance(data["question_wise"], list):
             data["question_wise"] = []
 
-        # Fix each question wise block
-        cleaned_qwise = []
+        cleaned = []
         for item in data["question_wise"]:
             if not isinstance(item, dict):
                 continue
 
-            cleaned_qwise.append({
-                "question": item.get("question", ""),
-                "candidate_answer": item.get("candidate_answer", ""),
+            cleaned.append({
+                "question": str(item.get("question", "")).strip(),
+                "candidate_answer": str(item.get("candidate_answer", "")).strip(),
                 "score": clamp_score(item.get("score", 0)),
-                "feedback": item.get("feedback", ""),
-                "improvement": item.get("improvement", ""),
-                "ideal_answer": item.get("ideal_answer", "")
+                "feedback": str(item.get("feedback", "")).strip(),
+                "improvement": str(item.get("improvement", "")).strip(),
+                "ideal_answer": str(item.get("ideal_answer", "")).strip()
             })
 
-        data["question_wise"] = cleaned_qwise
+        # Auto-fill missing evaluations if LLM returns less questions
+        if len(cleaned) < len(qa_list):
+            for i in range(len(cleaned), len(qa_list)):
+                cleaned.append({
+                    "question": qa_list[i].get("question", ""),
+                    "candidate_answer": qa_list[i].get("answer", ""),
+                    "score": 0,
+                    "feedback": "Evaluation missing from model output.",
+                    "improvement": "Try improving clarity and technical explanation.",
+                    "ideal_answer": "Not generated."
+                })
+
+        data["question_wise"] = cleaned
 
         return data
 
     except Exception as e:
-        return {"error": "JSON parse failed", "raw": text, "exception": str(e)}
+        return {"error": "JSON parse failed", "raw": raw_text, "exception": str(e)}
