@@ -9,6 +9,7 @@ load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
+# ---------------- JSON CLEANER ----------------
 def extract_json(text):
     """
     Extract JSON object from messy LLM output safely.
@@ -20,6 +21,9 @@ def extract_json(text):
 
 
 def clamp_score(x):
+    """
+    Clamp score between 0 and 10
+    """
     try:
         x = float(x)
         if x < 0:
@@ -31,48 +35,69 @@ def clamp_score(x):
         return 0
 
 
-def evaluate_answer(question, answer, role="SDE", difficulty="Medium"):
+# ---------------- FULL INTERVIEW EVALUATOR ----------------
+def evaluate_full_interview(qa_list, role="SDE", difficulty="Medium", interview_type="Technical"):
+    """
+    Evaluates the entire interview at the end.
+    Returns a structured report JSON.
+    """
+
+    if not qa_list or len(qa_list) == 0:
+        return {"error": "No interview data found. qa_list is empty."}
+
+    # Convert Q&A list into readable transcript
+    transcript = ""
+    for i, qa in enumerate(qa_list, start=1):
+        transcript += f"\nQ{i}: {qa.get('question','')}\n"
+        transcript += f"A{i}: {qa.get('answer','')}\n"
+
     prompt = f"""
-You are an expert MAANG interview evaluator.
+You are a professional MAANG interviewer evaluator.
 
 Interview Settings:
 Role: {role}
 Difficulty: {difficulty}
+Interview Type: {interview_type}
 
-Evaluate the candidate answer strictly based on the above settings.
+Below is the complete interview transcript:
 
-Question:
-{question}
+{transcript}
 
-Candidate Answer:
-{answer}
+TASK:
+Evaluate the candidate's performance question-by-question and also overall.
 
-Return strictly JSON ONLY in this format:
+Return STRICT JSON ONLY in this format:
 
 {{
-  "technical_accuracy": 0-10,
-  "clarity": 0-10,
-  "confidence": 0-10,
-  "depth": 0-10,
-  "final_score": 0-10,
-  "strengths": ["...","..."],
-  "weaknesses": ["...","..."],
-  "feedback": "...",
-  "improvement": "...",
-  "ideal_answer": "..."
+  "overall_score": 0-10,
+  "verdict": "Strong Hire/Hire/Maybe/No Hire",
+  "summary_feedback": "...",
+  "improvement_plan": "...",
+  "question_wise": [
+    {{
+      "question": "...",
+      "candidate_answer": "...",
+      "score": 0-10,
+      "feedback": "...",
+      "improvement": "...",
+      "ideal_answer": "..."
+    }}
+  ]
 }}
 
-Rules:
-- Return ONLY JSON.
-- Scores must be numeric values between 0 and 10.
-- Strengths and weaknesses must be lists.
-- Ideal answer should match role and difficulty.
+IMPORTANT RULES:
+- Output ONLY valid JSON (no markdown, no extra text).
+- overall_score must be numeric (0-10).
+- Each question must have its own score.
+- Ideal answers must match role + difficulty.
+- If answer is empty or wrong, score should be low.
+- Verdict must be one of: Strong Hire, Hire, Maybe, No Hire.
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "You must return only valid JSON. No markdown. No extra text."},
+            {"role": "system", "content": "Return only valid JSON. No markdown. No explanation."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2
@@ -87,29 +112,41 @@ Rules:
     try:
         data = json.loads(json_text)
 
-        # Clamp scores
-        data["technical_accuracy"] = clamp_score(data.get("technical_accuracy", 0))
-        data["clarity"] = clamp_score(data.get("clarity", 0))
-        data["confidence"] = clamp_score(data.get("confidence", 0))
-        data["depth"] = clamp_score(data.get("depth", 0))
-        data["final_score"] = clamp_score(data.get("final_score", 0))
+        # Clamp overall score
+        data["overall_score"] = clamp_score(data.get("overall_score", 0))
 
-        # Ensure strengths/weaknesses exist
-        if "strengths" not in data or not isinstance(data["strengths"], list):
-            data["strengths"] = []
+        # Ensure verdict exists
+        if "verdict" not in data:
+            data["verdict"] = "Unknown"
 
-        if "weaknesses" not in data or not isinstance(data["weaknesses"], list):
-            data["weaknesses"] = []
+        # Ensure summary feedback exists
+        if "summary_feedback" not in data:
+            data["summary_feedback"] = ""
 
-        # Ensure required text fields exist
-        if "feedback" not in data:
-            data["feedback"] = ""
+        # Ensure improvement plan exists
+        if "improvement_plan" not in data:
+            data["improvement_plan"] = ""
 
-        if "improvement" not in data:
-            data["improvement"] = ""
+        # Ensure question_wise exists
+        if "question_wise" not in data or not isinstance(data["question_wise"], list):
+            data["question_wise"] = []
 
-        if "ideal_answer" not in data:
-            data["ideal_answer"] = ""
+        # Fix each question wise block
+        cleaned_qwise = []
+        for item in data["question_wise"]:
+            if not isinstance(item, dict):
+                continue
+
+            cleaned_qwise.append({
+                "question": item.get("question", ""),
+                "candidate_answer": item.get("candidate_answer", ""),
+                "score": clamp_score(item.get("score", 0)),
+                "feedback": item.get("feedback", ""),
+                "improvement": item.get("improvement", ""),
+                "ideal_answer": item.get("ideal_answer", "")
+            })
+
+        data["question_wise"] = cleaned_qwise
 
         return data
 
