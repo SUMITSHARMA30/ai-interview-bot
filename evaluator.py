@@ -31,14 +31,21 @@ def clamp_score(x):
         return 0
 
 
-def evaluate_answer(question, answer):
+def evaluate_answer(question, answer, role="SDE", difficulty="Medium"):
     prompt = f"""
-You are an expert interview evaluator like MAANG interviewers.
+You are an expert MAANG interview evaluator.
 
-Evaluate this candidate answer properly.
+Interview Settings:
+Role: {role}
+Difficulty: {difficulty}
 
-Question: {question}
-Answer: {answer}
+Evaluate the candidate answer strictly based on the above settings.
+
+Question:
+{question}
+
+Candidate Answer:
+{answer}
 
 Return strictly JSON ONLY in this format:
 
@@ -55,22 +62,23 @@ Return strictly JSON ONLY in this format:
   "ideal_answer": "..."
 }}
 
-Important rules:
+Rules:
 - Return ONLY JSON.
-- Scores must be numbers between 0 and 10.
+- Scores must be numeric values between 0 and 10.
+- Strengths and weaknesses must be lists.
+- Ideal answer should match role and difficulty.
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "You are a strict JSON generator. Return JSON only."},
+            {"role": "system", "content": "You must return only valid JSON. No markdown. No extra text."},
             {"role": "user", "content": prompt}
         ],
-        temperature=0.3
+        temperature=0.2
     )
 
     text = response.choices[0].message.content.strip()
-
     json_text = extract_json(text)
 
     if not json_text:
@@ -92,6 +100,16 @@ Important rules:
 
         if "weaknesses" not in data or not isinstance(data["weaknesses"], list):
             data["weaknesses"] = []
+
+        # Ensure required text fields exist
+        if "feedback" not in data:
+            data["feedback"] = ""
+
+        if "improvement" not in data:
+            data["improvement"] = ""
+
+        if "ideal_answer" not in data:
+            data["ideal_answer"] = ""
 
         return data
 
