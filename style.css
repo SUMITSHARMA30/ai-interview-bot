@@ -1,83 +1,244 @@
-body {
-    background-color: #f5f7fb;
-    font-family: Arial, sans-serif;
+/* ==============================
+   GLOBAL PAGE BACKGROUND + FONT
+============================== */
+
+html, body, [class*="css"] {
+    font-family: "Segoe UI", sans-serif !important;
+    background-color: #f5f7fb !important;
+    color: #111827 !important;
 }
 
+/* Streamlit main container */
+.main {
+    background-color: #f5f7fb !important;
+}
+
+/* ==============================
+   HEADER SECTION
+============================== */
+
 .header-box {
-    background: linear-gradient(90deg, #0f62fe, #0043ce);
-    padding: 20px;
-    border-radius: 14px;
-    color: white;
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    padding: 22px;
+    border-radius: 16px;
+    color: white !important;
     margin-bottom: 20px;
+    box-shadow: 0px 6px 18px rgba(37, 99, 235, 0.25);
 }
 
 .header-box h1 {
     margin: 0;
     font-size: 34px;
-    font-weight: 700;
+    font-weight: 800;
+    color: white !important;
 }
 
 .header-box p {
-    margin: 6px 0 0;
+    margin-top: 6px;
     font-size: 14px;
-    opacity: 0.9;
+    color: #e5e7eb !important;
 }
+
+/* ==============================
+   SECTION TITLES
+============================== */
 
 .section-title {
     font-size: 22px;
-    font-weight: 700;
-    color: #1f1f1f;
-    margin-top: 10px;
+    font-weight: 800;
+    color: #111827 !important;
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
+
+/* ==============================
+   PROGRESS BOX
+============================== */
 
 .progress-box {
-    background: white;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid #e0e0e0;
+    background: white !important;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
     font-size: 16px;
-    margin-bottom: 10px;
+    color: #111827 !important;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 15px;
 }
 
+/* ==============================
+   CHAT BUBBLES
+============================== */
+
 .chat-ai {
-    background: #eef4ff;
-    border-left: 6px solid #0f62fe;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    background: #eff6ff !important;
+    border-left: 6px solid #2563eb;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #111827 !important;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 
 .chat-user {
-    background: #e7fbe7;
-    border-left: 6px solid #24a148;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    background: #ecfdf5 !important;
+    border-left: 6px solid #16a34a;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #111827 !important;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 
 .chat-eval {
-    background: #fff4e5;
-    border-left: 6px solid #ff832b;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    background: #fff7ed !important;
+    border-left: 6px solid #f97316;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #111827 !important;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
 }
 
+/* ==============================
+   REPORT CARD
+============================== */
+
 .report-card {
-    background: white;
+    background: white !important;
     padding: 18px;
-    border-radius: 14px;
-    border: 1px solid #ddd;
-    margin-bottom: 15px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 18px;
+    box-shadow: 0px 6px 14px rgba(0,0,0,0.05);
 }
 
 .report-card h3 {
     margin: 0;
     font-size: 20px;
-    color: #0f62fe;
+    font-weight: 800;
+    color: #2563eb !important;
 }
 
 .report-card p {
-    font-size: 14px;
+    font-size: 15px;
     margin-top: 8px;
+    color: #111827 !important;
+}
+
+/* ==============================
+   INPUT BOXES
+============================== */
+
+textarea, input {
+    border-radius: 12px !important;
+    border: 1px solid #d1d5db !important;
+    padding: 12px !important;
+    font-size: 15px !important;
+    color: #111827 !important;
+    background: white !important;
+}
+
+/* ==============================
+   STREAMLIT BUTTON STYLING
+============================== */
+
+.stButton button {
+    background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
+    color: white !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    padding: 12px 18px !important;
+    border: none !important;
+    transition: 0.2s ease-in-out;
+    box-shadow: 0px 6px 14px rgba(37, 99, 235, 0.25);
+}
+
+.stButton button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, #1d4ed8, #1e40af) !important;
+}
+
+/* Secondary buttons (danger/end interview etc) */
+button[kind="secondary"] {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* ==============================
+   SIDEBAR (HR PANEL)
+============================== */
+
+section[data-testid="stSidebar"] {
+    background: #111827 !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] select,
+section[data-testid="stSidebar"] textarea {
+    background: #1f2937 !important;
+    color: white !important;
+    border-radius: 10px !important;
+    border: 1px solid #374151 !important;
+}
+
+/* Sidebar title */
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 {
+    color: #60a5fa !important;
+    font-weight: 800 !important;
+}
+
+/* ==============================
+   DATAFRAME TABLE DESIGN
+============================== */
+
+[data-testid="stDataFrame"] {
+    border-radius: 14px !important;
+    border: 1px solid #e5e7eb !important;
+    overflow: hidden !important;
+    box-shadow: 0px 4px 14px rgba(0,0,0,0.06);
+}
+
+/* ==============================
+   DOWNLOAD BUTTON
+============================== */
+
+.stDownloadButton button {
+    background: linear-gradient(90deg, #16a34a, #15803d) !important;
+    color: white !important;
+    font-weight: 800 !important;
+    border-radius: 14px !important;
+    padding: 12px 18px !important;
+    border: none !important;
+    box-shadow: 0px 6px 14px rgba(22, 163, 74, 0.25);
+}
+
+.stDownloadButton button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, #15803d, #166534) !important;
+}
+
+/* ==============================
+   REMOVE STREAMLIT FOOTER
+============================== */
+
+footer {
+    visibility: hidden;
+}
+
+#MainMenu {
+    visibility: hidden;
 }
