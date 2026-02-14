@@ -1,244 +1,198 @@
-/* ==============================
-   GLOBAL PAGE BACKGROUND + FONT
-============================== */
+/* ================================
+   GLOBAL THEME (Premium SaaS UI)
+================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 html, body, [class*="css"] {
-    font-family: "Segoe UI", sans-serif !important;
-    background-color: #f5f7fb !important;
-    color: #111827 !important;
+    font-family: "Inter", sans-serif !important;
 }
 
-/* Streamlit main container */
-.main {
-    background-color: #f5f7fb !important;
-}
-
-/* ==============================
-   HEADER SECTION
-============================== */
-
-.header-box {
-    background: linear-gradient(90deg, #2563eb, #1d4ed8);
-    padding: 22px;
-    border-radius: 16px;
-    color: white !important;
-    margin-bottom: 20px;
-    box-shadow: 0px 6px 18px rgba(37, 99, 235, 0.25);
-}
-
-.header-box h1 {
-    margin: 0;
-    font-size: 34px;
-    font-weight: 800;
+/* MAIN APP BACKGROUND */
+.stApp {
+    background: radial-gradient(circle at top left, #0f172a, #020617 65%);
     color: white !important;
 }
 
-.header-box p {
-    margin-top: 6px;
-    font-size: 14px;
+/* REMOVE STREAMLIT DEFAULT WHITE BACKGROUND */
+.main .block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+}
+
+/* HEADER TITLE FIX */
+h1, h2, h3, h4, h5 {
+    color: white !important;
+    font-weight: 800 !important;
+}
+
+/* TEXT */
+p, label, span, div {
     color: #e5e7eb !important;
 }
 
-/* ==============================
-   SECTION TITLES
-============================== */
-
-.section-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #111827 !important;
-    margin-top: 12px;
-    margin-bottom: 12px;
-}
-
-/* ==============================
-   PROGRESS BOX
-============================== */
-
-.progress-box {
-    background: white !important;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid #e5e7eb;
-    font-size: 16px;
-    color: #111827 !important;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
-    margin-bottom: 15px;
-}
-
-/* ==============================
-   CHAT BUBBLES
-============================== */
-
-.chat-ai {
-    background: #eff6ff !important;
-    border-left: 6px solid #2563eb;
-    padding: 14px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    font-size: 15px;
-    color: #111827 !important;
-    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
-}
-
-.chat-user {
-    background: #ecfdf5 !important;
-    border-left: 6px solid #16a34a;
-    padding: 14px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    font-size: 15px;
-    color: #111827 !important;
-    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
-}
-
-.chat-eval {
-    background: #fff7ed !important;
-    border-left: 6px solid #f97316;
-    padding: 14px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    font-size: 15px;
-    color: #111827 !important;
-    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
-}
-
-/* ==============================
-   REPORT CARD
-============================== */
-
-.report-card {
-    background: white !important;
-    padding: 18px;
-    border-radius: 16px;
-    border: 1px solid #e5e7eb;
-    margin-bottom: 18px;
-    box-shadow: 0px 6px 14px rgba(0,0,0,0.05);
-}
-
-.report-card h3 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    color: #2563eb !important;
-}
-
-.report-card p {
-    font-size: 15px;
-    margin-top: 8px;
-    color: #111827 !important;
-}
-
-/* ==============================
-   INPUT BOXES
-============================== */
-
-textarea, input {
-    border-radius: 12px !important;
-    border: 1px solid #d1d5db !important;
-    padding: 12px !important;
-    font-size: 15px !important;
-    color: #111827 !important;
-    background: white !important;
-}
-
-/* ==============================
-   STREAMLIT BUTTON STYLING
-============================== */
-
-.stButton button {
-    background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
-    color: white !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    border-radius: 14px !important;
-    padding: 12px 18px !important;
-    border: none !important;
-    transition: 0.2s ease-in-out;
-    box-shadow: 0px 6px 14px rgba(37, 99, 235, 0.25);
-}
-
-.stButton button:hover {
-    transform: translateY(-2px);
-    background: linear-gradient(90deg, #1d4ed8, #1e40af) !important;
-}
-
-/* Secondary buttons (danger/end interview etc) */
-button[kind="secondary"] {
-    background: #f3f4f6 !important;
-    color: #111827 !important;
-    border-radius: 14px !important;
-    font-weight: 700 !important;
-    border: 1px solid #d1d5db !important;
-}
-
-/* ==============================
-   SIDEBAR (HR PANEL)
-============================== */
-
+/* SIDEBAR BACKGROUND */
 section[data-testid="stSidebar"] {
-    background: #111827 !important;
+    background: linear-gradient(180deg, #0b1220, #020617);
+    border-right: 1px solid rgba(255,255,255,0.08);
 }
 
+/* SIDEBAR TEXT */
 section[data-testid="stSidebar"] * {
-    color: white !important;
+    color: #f1f5f9 !important;
+    font-weight: 500;
 }
 
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] select,
-section[data-testid="stSidebar"] textarea {
-    background: #1f2937 !important;
-    color: white !important;
-    border-radius: 10px !important;
-    border: 1px solid #374151 !important;
-}
-
-/* Sidebar title */
+/* SIDEBAR TITLE */
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 {
-    color: #60a5fa !important;
-    font-weight: 800 !important;
-}
-
-/* ==============================
-   DATAFRAME TABLE DESIGN
-============================== */
-
-[data-testid="stDataFrame"] {
-    border-radius: 14px !important;
-    border: 1px solid #e5e7eb !important;
-    overflow: hidden !important;
-    box-shadow: 0px 4px 14px rgba(0,0,0,0.06);
-}
-
-/* ==============================
-   DOWNLOAD BUTTON
-============================== */
-
-.stDownloadButton button {
-    background: linear-gradient(90deg, #16a34a, #15803d) !important;
     color: white !important;
-    font-weight: 800 !important;
+    font-weight: 800;
+}
+
+/* INPUT BOX STYLE */
+input, textarea {
     border-radius: 14px !important;
-    padding: 12px 18px !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    color: white !important;
+    padding: 14px !important;
+    font-size: 16px !important;
+    transition: 0.3s ease;
+}
+
+/* INPUT FOCUS EFFECT */
+input:focus, textarea:focus {
+    border: 1px solid #3b82f6 !important;
+    box-shadow: 0px 0px 18px rgba(59, 130, 246, 0.6) !important;
+    outline: none !important;
+}
+
+/* DROPDOWN SELECTBOX */
+div[data-baseweb="select"] {
+    border-radius: 14px !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+/* FILE UPLOADER BOX */
+div[data-testid="stFileUploader"] {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 18px;
+    padding: 15px;
+    border: 1px dashed rgba(255,255,255,0.25);
+    box-shadow: 0px 10px 30px rgba(0,0,0,0.4);
+}
+
+/* BUTTON STYLE (Premium Gradient) */
+button[kind="primary"] {
+    background: linear-gradient(90deg, #3b82f6, #9333ea) !important;
     border: none !important;
-    box-shadow: 0px 6px 14px rgba(22, 163, 74, 0.25);
+    border-radius: 14px !important;
+    padding: 0.6rem 1.4rem !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: white !important;
+    box-shadow: 0px 10px 25px rgba(59,130,246,0.35) !important;
+    transition: all 0.3s ease-in-out;
 }
 
-.stDownloadButton button:hover {
+/* BUTTON HOVER */
+button[kind="primary"]:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0px 14px 35px rgba(147,51,234,0.45) !important;
+}
+
+/* SECONDARY BUTTON */
+button[kind="secondary"] {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 14px !important;
+    padding: 0.55rem 1.3rem !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #e2e8f0 !important;
+    transition: all 0.3s ease;
+}
+
+/* SECONDARY BUTTON HOVER */
+button[kind="secondary"]:hover {
+    background: rgba(255,255,255,0.12) !important;
     transform: translateY(-2px);
-    background: linear-gradient(90deg, #15803d, #166534) !important;
 }
 
-/* ==============================
-   REMOVE STREAMLIT FOOTER
-============================== */
+/* CHAT MESSAGE BOX */
+.chat-box {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0px 12px 30px rgba(0,0,0,0.35);
+}
 
+/* AI MESSAGE */
+.ai-msg {
+    border-left: 4px solid #3b82f6;
+}
+
+/* USER MESSAGE */
+.user-msg {
+    border-left: 4px solid #22c55e;
+}
+
+/* EVALUATION MESSAGE */
+.eval-msg {
+    border-left: 4px solid #f97316;
+}
+
+/* METRIC CARD */
+.metric-card {
+    background: rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.35);
+}
+
+/* DIVIDER */
+hr {
+    border: 0px;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 25px 0px;
+}
+
+/* TABLE STYLING */
+table {
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    background: rgba(15, 23, 42, 0.65) !important;
+    color: white !important;
+}
+
+thead tr {
+    background: rgba(59,130,246,0.25) !important;
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,0.06) !important;
+}
+
+/* STREAMLIT SUCCESS/ERROR */
+div[data-testid="stAlert"] {
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+}
+
+/* REMOVE STREAMLIT FOOTER */
 footer {
     visibility: hidden;
 }
 
+/* REMOVE STREAMLIT MENU */
 #MainMenu {
     visibility: hidden;
 }
