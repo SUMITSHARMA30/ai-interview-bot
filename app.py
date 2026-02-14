@@ -8,7 +8,12 @@ from evaluator import evaluate_answer
 from streamlit_mic_recorder import mic_recorder
 from tts_engine import text_to_speech
 from groq import Groq
-from pdf_report import generate_pdf_report
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from datetime import datetime
+
 
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
 
@@ -20,6 +25,64 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 TOTAL_QUESTIONS = 5
 
 
+# ---------------- PDF REPORT FUNCTION ----------------
+def split_text(text, max_length=90):
+    words = text.split()
+    lines = []
+    line = ""
+
+    for word in words:
+        if len(line + word) < max_length:
+            line += word + " "
+        else:
+            lines.append(line.strip())
+            line = word + " "
+
+    if line:
+        lines.append(line.strip())
+
+    return lines
+
+
+def generate_pdf_report(chat, avg_score, verdict):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "AI Interview Report (MAANG Style)")
+
+    c.setFont("Helvetica", 11)
+    c.drawString(50, height - 80, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawString(50, height - 100, f"Final Score: {round(avg_score, 2)} / 10")
+    c.drawString(50, height - 120, f"Verdict: {verdict}")
+
+    c.line(50, height - 130, width - 50, height - 130)
+
+    y = height - 160
+    c.setFont("Helvetica", 10)
+
+    for role, msg in chat:
+        text = f"{role}: {msg}"
+        lines = split_text(text)
+
+        for line in lines:
+            if y < 60:
+                c.showPage()
+                y = height - 60
+                c.setFont("Helvetica", 10)
+
+            c.drawString(50, y, line)
+            y -= 15
+
+        y -= 10
+
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+
+# ---------------- SPEECH TO TEXT ----------------
 def transcribe_audio(audio_path):
     with open(audio_path, "rb") as f:
         transcription = client.audio.transcriptions.create(
