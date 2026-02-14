@@ -1,275 +1,363 @@
 import streamlit as st
-import tempfile
 import os
+import tempfile
 import pandas as pd
 
 from resume_parser import extract_text
 from ai_engine import generate_question
 from evaluator import evaluate_full_interview
-from tts_engine import text_to_speech
 from streamlit_mic_recorder import mic_recorder
+from tts_engine import text_to_speech
 from groq import Groq
 
 from pdf_report import generate_pdf_report
-from db import init_db, save_report, fetch_all_reports
+from database import init_db, save_report
+from hr_dashboard import hr_dashboard
 
-# -----------------------------------
-# INITIAL SETUP
-# -----------------------------------
+
+# ---------------- CONFIG ----------------
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 init_db()
 
-# -----------------------------------
-# LOAD CSS
-# -----------------------------------
+# ---------------- LOAD CSS ----------------
 def load_css():
-    with open("styles.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    try:
+        with open("styles.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except:
+        st.warning("CSS file missing!")
 
 load_css()
 
-# -----------------------------------
-# HEADER
-# -----------------------------------
-st.markdown("""
-<div style="
-    background: linear-gradient(90deg, #2563eb, #7c3aed);
-    padding: 30px;
-    border-radius: 22px;
-    margin-bottom: 25px;
-    box-shadow: 0px 15px 40px rgba(0,0,0,0.45);
-">
-    <h1 style="margin:0; font-size:42px;">🤖 AI Interview Bot</h1>
-    <p style="margin-top:8px; color:#e0e7ff;">
-        MAANG-style Resume-based Mock Interview with HR Dashboard
-    </p>
-</div>
-""", unsafe_allow_html=True)
 
-# -----------------------------------
-# SIDEBAR – ADMIN / HR PANEL
-# -----------------------------------
-st.sidebar.title("🛠️ HR Control Panel")
+# ---------------- SESSION INIT ----------------
+if "page" not in st.session_state:
+    st.session_state.page = "Candidate"
 
-role = st.sidebar.selectbox("Role", ["SDE", "Data Scientist", "ML Engineer"])
-difficulty = st.sidebar.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
+if "hr_logged_in" not in st.session_state:
+    st.session_state.hr_logged_in = False
+
+if "chat" not in st.session_state:
+    st.session_state.chat = []
+
+if "qa_list" not in st.session_state:
+    st.session_state.qa_list = []
+
+if "previous_answers" not in st.session_state:
+    st.session_state.previous_answers = ""
+
+if "last_question" not in st.session_state:
+    st.session_state.last_question = ""
+
+if "interview_started" not in st.session_state:
+    st.session_state.interview_started = False
+
+if "question_count" not in st.session_state:
+    st.session_state.question_count = 0
+
+if "interview_ended" not in st.session_state:
+    st.session_state.interview_ended = False
+
+if "final_report" not in st.session_state:
+    st.session_state.final_report = None
+
+
+# ---------------- RESET INTERVIEW ----------------
+def reset_interview():
+    st.session_state.chat = []
+    st.session_state.qa_list = []
+    st.session_state.previous_answers = ""
+    st.session_state.last_question = ""
+    st.session_state.interview_started = False
+    st.session_state.question_count = 0
+    st.session_state.interview_ended = False
+    st.session_state.final_report = None
+
+
+# ---------------- SPEECH TO TEXT ----------------
+def transcribe_audio(audio_path):
+    with open(audio_path, "rb") as f:
+        transcription = client.audio.transcriptions.create(
+            file=f,
+            model="whisper-large-v3"
+        )
+    return transcription.text
+
+
+# ---------------- NAVIGATION ----------------
+st.sidebar.title("🌍 Navigation")
+
+page = st.sidebar.radio(
+    "Choose Portal",
+    ["Candidate Portal", "HR Dashboard"],
+    index=0
+)
+
+if page == "Candidate Portal":
+    st.session_state.page = "Candidate"
+else:
+    st.session_state.page = "HR"
+
+
+# ---------------- HR DASHBOARD LOGIN PAGE ----------------
+if st.session_state.page == "HR":
+
+    if not st.session_state.hr_logged_in:
+
+        st.markdown("<h1 class='main-title'>🔐 HR Login</h1>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitle'>Only HR/Admin can access reports.</p>", unsafe_allow_html=True)
+
+        password = st.text_input("Enter HR Password", type="password")
+
+        if st.button("Login"):
+            if password == os.getenv("HR_PASSWORD"):
+                st.session_state.hr_logged_in = True
+                st.success("✅ Login successful!")
+                st.rerun()
+            else:
+                st.error("❌ Wrong Password!")
+
+        st.stop()
+
+    else:
+        hr_dashboard()
+        st.stop()
+
+
+# ---------------- CANDIDATE PORTAL ----------------
+st.markdown("<h1 class='main-title'>🤖 AI Powered Interview Bot</h1>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>MAANG Style Mock Interview + PDF Report + HR Dashboard</p>", unsafe_allow_html=True)
+
+st.divider()
+
+# ---------------- ADMIN SETTINGS (Candidate Side) ----------------
+st.sidebar.title("🛠️ Interview Settings")
+
+role = st.sidebar.selectbox("Select Role", ["SDE", "Data Scientist", "ML Engineer"])
+difficulty = st.sidebar.selectbox("Select Difficulty", ["Easy", "Medium", "Hard"])
 interview_type = st.sidebar.selectbox("Interview Type", ["Technical", "HR", "Mixed"])
-TOTAL_QUESTIONS = st.sidebar.slider("Number of Questions", 3, 15, 5)
+
+TOTAL_QUESTIONS = st.sidebar.slider("Number of Questions", 5, 20, 5)
 
 mode = st.sidebar.radio("Interview Mode", ["Text Mode", "Voice Mode"])
 
 st.sidebar.divider()
-if st.sidebar.button("📊 View HR Dashboard"):
-    st.session_state.view_dashboard = True
+candidate_name = st.sidebar.text_input("Candidate Name", value="Unknown")
 
-# -----------------------------------
-# SESSION STATE
-# -----------------------------------
-defaults = {
-    "started": False,
-    "ended": False,
-    "q_index": 0,
-    "qa_list": [],
-    "current_question": "",
-    "candidate_name": "",
-    "resume_text": "",
-    "final_report": None,
-    "view_dashboard": False
-}
 
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# -----------------------------------
-# HR DASHBOARD
-# -----------------------------------
-if st.session_state.view_dashboard:
-    st.subheader("📊 HR Dashboard")
-    reports = fetch_all_reports()
-
-    if reports:
-        df = pd.DataFrame(reports)
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("No reports found.")
-
-    if st.button("⬅ Back"):
-        st.session_state.view_dashboard = False
-
-    st.stop()
-
-# -----------------------------------
-# CANDIDATE INPUT
-# -----------------------------------
-st.subheader("🎯 Candidate Interview Portal")
-
-st.session_state.candidate_name = st.text_input("Candidate Name")
-
-uploaded_file = st.file_uploader("Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
+# ---------------- FILE UPLOAD ----------------
+uploaded_file = st.file_uploader("📌 Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
 
 if uploaded_file:
-    st.session_state.resume_text = extract_text(uploaded_file)
+    resume_text = extract_text(uploaded_file)
 
-# -----------------------------------
-# START INTERVIEW
-# -----------------------------------
-if st.button("🚀 Start Interview", disabled=not uploaded_file):
-    st.session_state.started = True
-    st.session_state.ended = False
-    st.session_state.q_index = 1
-    st.session_state.qa_list = []
+    col1, col2 = st.columns(2)
 
-    q = generate_question(
-        st.session_state.resume_text,
-        "",
-        role,
-        difficulty,
-        interview_type
-    )
+    with col1:
+        if st.button("🚀 Start Interview"):
+            reset_interview()
 
-    st.session_state.current_question = q
+            q = generate_question(resume_text, "", role, difficulty, interview_type)
+            st.session_state.last_question = q
+            st.session_state.chat.append(("AI", q))
 
-    if mode == "Voice Mode":
-        audio = text_to_speech(q)
-        st.audio(audio, format="audio/mp3")
+            st.session_state.interview_started = True
+            st.session_state.question_count = 1
 
-# -----------------------------------
-# INTERVIEW FLOW
-# -----------------------------------
-if st.session_state.started and not st.session_state.ended:
+            if mode == "Voice Mode":
+                voice_file = text_to_speech(q)
+                st.audio(voice_file, format="audio/mp3")
 
-    st.markdown(f"### 📌 Question {st.session_state.q_index} / {TOTAL_QUESTIONS}")
-    st.markdown(f"""
-    <div class="chat-box ai-msg">
-        <b>🤖 AI Question</b><br>
-        {st.session_state.current_question}
-    </div>
-    """, unsafe_allow_html=True)
+    with col2:
+        if st.button("🛑 End Interview"):
+            st.session_state.interview_ended = True
 
-    user_answer = ""
+    # ---------------- CHAT DISPLAY ----------------
+    st.subheader("💬 Interview Chat")
 
-    # ---------- TEXT MODE ----------
-    if mode == "Text Mode":
-        user_answer = st.text_area(
-            "Your Answer",
-            key=f"answer_{st.session_state.q_index}"
-        )
+    for role_msg, msg in st.session_state.chat:
+        st.write(f"**{role_msg}:** {msg}")
 
-        submitted = st.button("✅ Submit Answer")
+    # ---------------- INTERVIEW FLOW ----------------
+    if st.session_state.interview_started and not st.session_state.interview_ended:
 
-    # ---------- VOICE MODE ----------
-    else:
-        audio = mic_recorder(
-            start_prompt="🎙️ Start Recording",
-            stop_prompt="⏹️ Stop Recording",
-            key=f"mic_{st.session_state.q_index}"
-        )
+        if st.session_state.question_count > TOTAL_QUESTIONS:
+            st.session_state.interview_ended = True
+            st.rerun()
 
-        submitted = False
+        st.divider()
+        st.write(f"📌 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
 
-        if audio:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-                f.write(audio["bytes"])
-                path = f.name
+        # ---------------- TEXT MODE ----------------
+        if mode == "Text Mode":
+            st.subheader("⌨️ Text Answer Mode")
 
-            user_answer = client.audio.transcriptions.create(
-                file=open(path, "rb"),
-                model="whisper-large-v3"
-            ).text
+            user_answer = st.text_area("Write your answer here:", key="text_answer")
 
-            st.markdown(f"""
-            <div class="chat-box user-msg">
-                <b>🧑 Your Answer</b><br>
-                {user_answer}
-            </div>
-            """, unsafe_allow_html=True)
+            if st.button("✅ Submit Answer"):
+                if user_answer.strip():
 
-            submitted = st.button("🚀 Submit Voice Answer")
+                    st.session_state.chat.append(("You", user_answer))
 
-    # ---------- HANDLE SUBMIT ----------
-    if submitted and user_answer.strip():
+                    st.session_state.qa_list.append({
+                        "question": st.session_state.last_question,
+                        "answer": user_answer
+                    })
 
-        st.session_state.qa_list.append({
-            "question": st.session_state.current_question,
-            "answer": user_answer
-        })
+                    st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
 
-        if st.session_state.q_index >= TOTAL_QUESTIONS:
-            st.session_state.ended = True
-        else:
-            st.session_state.q_index += 1
-            next_q = generate_question(
-                st.session_state.resume_text,
-                str(st.session_state.qa_list),
-                role,
-                difficulty,
-                interview_type
+                    q = generate_question(resume_text, st.session_state.previous_answers, role, difficulty, interview_type)
+
+                    st.session_state.last_question = q
+                    st.session_state.chat.append(("AI", q))
+
+                    st.session_state.question_count += 1
+
+                    st.session_state["text_answer"] = ""  # clear input
+                    st.rerun()
+
+                else:
+                    st.warning("⚠️ Please write an answer first!")
+
+        # ---------------- VOICE MODE ----------------
+        if mode == "Voice Mode":
+            st.subheader("🎤 Voice Answer Mode")
+
+            audio = mic_recorder(
+                start_prompt="🎙️ Start Recording",
+                stop_prompt="⏹️ Stop Recording",
+                key="mic"
             )
-            st.session_state.current_question = next_q
+
+            if audio:
+                st.audio(audio["bytes"], format="audio/wav")
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
+                    f.write(audio["bytes"])
+                    audio_path = f.name
+
+                user_answer_voice = transcribe_audio(audio_path)
+
+                st.success("✅ Transcribed Answer:")
+                st.write(user_answer_voice)
+
+                if st.button("🚀 Submit Voice Answer"):
+                    if user_answer_voice.strip():
+
+                        st.session_state.chat.append(("You", user_answer_voice))
+
+                        st.session_state.qa_list.append({
+                            "question": st.session_state.last_question,
+                            "answer": user_answer_voice
+                        })
+
+                        st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
+
+                        q = generate_question(resume_text, st.session_state.previous_answers, role, difficulty, interview_type)
+
+                        st.session_state.last_question = q
+                        st.session_state.chat.append(("AI", q))
+
+                        st.session_state.question_count += 1
+
+                        voice_file = text_to_speech(q)
+                        st.audio(voice_file, format="audio/mp3")
+
+                        st.rerun()
+
+                    else:
+                        st.warning("⚠️ Voice answer is empty. Try again.")
+
+
+    # ---------------- FINAL REPORT GENERATION ----------------
+    if st.session_state.interview_ended and st.session_state.final_report is None:
+
+        st.info("⏳ Generating final report... Please wait...")
+
+        report = evaluate_full_interview(
+            st.session_state.qa_list,
+            role=role,
+            difficulty=difficulty,
+            interview_type=interview_type
+        )
+
+        st.session_state.final_report = report
+
+        save_report(
+            candidate_name=candidate_name,
+            role=role,
+            difficulty=difficulty,
+            interview_type=interview_type,
+            mode=mode,
+            report_json=report
+        )
 
         st.rerun()
 
-# -----------------------------------
-# FINAL EVALUATION
-# -----------------------------------
-if st.session_state.ended and not st.session_state.final_report:
 
-    report = evaluate_full_interview(
-        st.session_state.qa_list,
-        role,
-        difficulty,
-        interview_type
-    )
+    # ---------------- FINAL REPORT DISPLAY ----------------
+    if st.session_state.final_report:
 
-    st.session_state.final_report = report
+        report = st.session_state.final_report
 
-    save_report(
-        st.session_state.candidate_name,
-        role,
-        difficulty,
-        interview_type,
-        report
-    )
+        st.divider()
+        st.subheader("📊 Final Interview Report")
 
-# -----------------------------------
-# FINAL REPORT UI
-# -----------------------------------
-if st.session_state.final_report:
+        st.write(f"👤 Candidate: **{candidate_name}**")
+        st.write(f"🎯 Role: **{role}**")
+        st.write(f"⚡ Difficulty: **{difficulty}**")
+        st.write(f"📌 Type: **{interview_type}**")
 
-    r = st.session_state.final_report
+        overall_score = report.get("overall_score", 0)
+        verdict = report.get("verdict", "Unknown")
 
-    st.subheader("🏁 Final Interview Result")
+        st.success(f"🏆 Verdict: **{verdict}**")
+        st.metric("Overall Score", f"{overall_score}/10")
 
-    st.metric("Overall Score", f"{r['overall_score']} / 10")
-    st.success(f"Verdict: **{r['verdict']}**")
+        st.divider()
+        st.subheader("🧠 Summary Feedback")
+        st.write(report.get("summary_feedback", ""))
 
-    st.markdown("### 🧠 Summary Feedback")
-    st.write(r["summary_feedback"])
+        st.subheader("📌 Improvement Plan")
+        st.write(report.get("improvement_plan", ""))
 
-    st.markdown("### 📌 Improvement Plan")
-    st.write(r["improvement_plan"])
+        # ---------------- QUESTION TABLE ----------------
+        st.divider()
+        st.subheader("📋 Question Wise Evaluation Table")
 
-    st.markdown("### 📄 Download Report")
+        qwise = report.get("question_wise", [])
 
-    pdf = generate_pdf_report(
-        st.session_state.candidate_name,
-        role,
-        difficulty,
-        interview_type,
-        r
-    )
+        if qwise:
+            df = pd.DataFrame(qwise)
+            st.dataframe(df, use_container_width=True)
 
-    st.download_button(
-        "⬇ Download PDF Report",
-        pdf,
-        file_name="AI_Interview_Report.pdf",
-        mime="application/pdf"
-    )
+        # ---------------- PDF DOWNLOAD ----------------
+        st.divider()
+        st.subheader("📄 Download PDF Report")
 
-    if st.button("🔁 Start New Interview"):
-        for k in defaults:
-            st.session_state[k] = defaults[k]
-        st.rerun()
+        pdf_file = generate_pdf_report(
+            candidate_name=candidate_name,
+            role=role,
+            difficulty=difficulty,
+            interview_type=interview_type,
+            report=report
+        )
+
+        st.download_button(
+            label="📄 Download PDF Report",
+            data=pdf_file,
+            file_name=f"{candidate_name}_AI_Interview_Report.pdf",
+            mime="application/pdf"
+        )
+
+        st.divider()
+        if st.button("🔁 Start New Interview"):
+            reset_interview()
+            st.rerun()
+
+
+else:
+    st.info("📌 Upload your resume to start the interview.")
