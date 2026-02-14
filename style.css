@@ -1,0 +1,83 @@
+body {
+    background-color: #f5f7fb;
+    font-family: Arial, sans-serif;
+}
+
+.header-box {
+    background: linear-gradient(90deg, #0f62fe, #0043ce);
+    padding: 20px;
+    border-radius: 14px;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.header-box h1 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.header-box p {
+    margin: 6px 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f1f1f;
+    margin-top: 10px;
+}
+
+.progress-box {
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.chat-ai {
+    background: #eef4ff;
+    border-left: 6px solid #0f62fe;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.chat-user {
+    background: #e7fbe7;
+    border-left: 6px solid #24a148;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.chat-eval {
+    background: #fff4e5;
+    border-left: 6px solid #ff832b;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.report-card {
+    background: white;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+}
+
+.report-card h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #0f62fe;
+}
+
+.report-card p {
+    font-size: 14px;
+    margin-top: 8px;
+}
