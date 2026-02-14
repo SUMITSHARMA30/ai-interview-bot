@@ -11,7 +11,7 @@ from tts_engine import text_to_speech
 from groq import Groq
 
 from pdf_report import generate_pdf_report
-from database import init_db, save_report
+from db import init_db, save_report
 from hr_dashboard import hr_dashboard
 
 
