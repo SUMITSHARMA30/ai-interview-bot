@@ -1,49 +1,42 @@
-from groq import Groq
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
+from groq import Groq
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def generate_question(resume_text, previous_answers, role, difficulty, interview_type):
-
     prompt = f"""
-You are a professional MAANG interviewer.
+You are a MAANG-level interviewer.
 
-Interview Settings:
+Generate ONE next interview question based on:
+- Candidate resume
+- Previous Q&A context
+- Role, difficulty, interview type
+
 Role: {role}
 Difficulty: {difficulty}
 Interview Type: {interview_type}
 
-Candidate Resume:
+Resume:
 {resume_text}
 
-Previous Q&A:
+Previous Answers Context:
 {previous_answers}
 
-TASK:
-Generate the next best interview question.
+Rules:
+- Ask only ONE question
+- Keep it MAANG style
+- Must be relevant to the resume + role
+- Avoid repeating previous questions
+- If difficulty is Hard, ask deep concepts / edge cases
 
-RULES:
-- Output ONLY ONE QUESTION.
-- Output only question text (no numbering, no explanation).
-- Question must match the role selected.
-- Question difficulty must match the difficulty selected.
-- If interview_type = HR → ask behavioral HR question.
-- If interview_type = Technical → ask technical/coding/system/ML question.
-- If interview_type = Mixed → alternate HR and technical.
-- Make it realistic like MAANG interviewers.
+Return only the question text. No extra formatting.
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": "You are a strict MAANG interviewer. Return only the question."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.6
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7
     )
 
     return response.choices[0].message.content.strip()

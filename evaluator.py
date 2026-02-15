@@ -1,131 +1,63 @@
-from groq import Groq
-from dotenv import load_dotenv
 import os
 import json
-import re
-
-load_dotenv()
+from groq import Groq
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-def extract_json(text):
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return match.group()
-    return None
-
-
-def clamp_score(x):
-    try:
-        x = float(x)
-        if x < 0:
-            return 0
-        if x > 10:
-            return 10
-        return round(x, 2)
-    except:
-        return 0
-
-
-def evaluate_full_interview(qa_list, role="SDE", difficulty="Medium", interview_type="Technical"):
-
-    if not qa_list:
-        return {"error": "qa_list is empty. No interview happened."}
-
-    transcript = ""
+def evaluate_full_interview(qa_list, role, difficulty, interview_type):
+    qa_text = ""
     for i, qa in enumerate(qa_list, start=1):
-        transcript += f"\nQ{i}: {qa.get('question','')}\n"
-        transcript += f"A{i}: {qa.get('answer','')}\n"
+        qa_text += f"\nQ{i}: {qa['question']}\nA{i}: {qa['answer']}\n"
 
     prompt = f"""
-You are a professional MAANG interviewer evaluator.
+You are a MAANG-level Interview Evaluator.
 
-Interview Settings:
+Evaluate the candidate based on the FULL interview.
+
 Role: {role}
 Difficulty: {difficulty}
 Interview Type: {interview_type}
 
-Here is the complete interview transcript:
+Candidate Q&A:
+{qa_text}
 
-{transcript}
-
-TASK:
-Evaluate candidate performance.
-
-Return STRICT JSON ONLY:
+Return STRICT JSON ONLY in this exact format:
 
 {{
-  "overall_score": 0-10,
-  "verdict": "Strong Hire/Hire/Maybe/No Hire",
-  "summary_feedback": "...",
-  "improvement_plan": "...",
+  "overall_score": 0,
+  "verdict": "HIRE" or "NO_HIRE",
+  "summary_feedback": "string",
+  "improvement_plan": "string",
+  "strengths": ["string", "string"],
+  "weaknesses": ["string", "string"],
   "question_wise": [
     {{
-      "question": "...",
-      "candidate_answer": "...",
-      "score": 0-10,
-      "feedback": "...",
-      "improvement": "...",
-      "ideal_answer": "..."
+      "question": "string",
+      "candidate_answer": "string",
+      "score": 0,
+      "feedback": "string",
+      "improvement": "string",
+      "ideal_answer": "string"
     }}
   ]
 }}
-
 Rules:
-- Output ONLY valid JSON.
-- Verdict must be one of: Strong Hire, Hire, Maybe, No Hire.
-- Scores must be between 0 and 10.
+- overall_score must be from 0 to 10
+- Each question must have score 0-10
+- verdict must be ONLY HIRE or NO_HIRE
+- JSON must be valid and parsable
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": "Return only JSON. No markdown."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.2
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
     )
 
-    text = response.choices[0].message.content.strip()
-    json_text = extract_json(text)
-
-    if not json_text:
-        return {"error": "Invalid JSON returned", "raw": text}
+    raw = response.choices[0].message.content.strip()
 
     try:
-        data = json.loads(json_text)
-
-        data["overall_score"] = clamp_score(data.get("overall_score", 0))
-
-        if "verdict" not in data:
-            data["verdict"] = "Unknown"
-
-        if "summary_feedback" not in data:
-            data["summary_feedback"] = ""
-
-        if "improvement_plan" not in data:
-            data["improvement_plan"] = ""
-
-        if "question_wise" not in data or not isinstance(data["question_wise"], list):
-            data["question_wise"] = []
-
-        cleaned = []
-        for item in data["question_wise"]:
-            if not isinstance(item, dict):
-                continue
-
-            cleaned.append({
-                "question": item.get("question", ""),
-                "candidate_answer": item.get("candidate_answer", ""),
-                "score": clamp_score(item.get("score", 0)),
-                "feedback": item.get("feedback", ""),
-                "improvement": item.get("improvement", ""),
-                "ideal_answer": item.get("ideal_answer", "")
-            })
-
-        data["question_wise"] = cleaned
-        return data
-
-    except Exception as e:
-        return {"error": "JSON parse failed", "raw": text, "exception": str(e)}
+        return json.loads(raw)
+    except Exception:
+        raise ValueError(f"Groq returned invalid JSON:\n{raw}")

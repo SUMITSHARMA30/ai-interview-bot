@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
+import json
 
 from resume_parser import extract_text
 from ai_engine import generate_question
@@ -22,6 +23,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 init_db()
 
+
 # ---------------- LOAD CSS ----------------
 def load_css():
     try:
@@ -34,35 +36,27 @@ load_css()
 
 
 # ---------------- SESSION INIT ----------------
-if "page" not in st.session_state:
-    st.session_state.page = "Candidate"
+def init_session():
+    defaults = {
+        "page": "Candidate",
+        "hr_logged_in": False,
+        "chat": [],
+        "qa_list": [],
+        "previous_answers": "",
+        "last_question": "",
+        "interview_started": False,
+        "question_count": 0,
+        "interview_ended": False,
+        "final_report": None,
+        "resume_text": "",
+        "candidate_name": "Unknown"
+    }
 
-if "hr_logged_in" not in st.session_state:
-    st.session_state.hr_logged_in = False
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
 
-if "chat" not in st.session_state:
-    st.session_state.chat = []
-
-if "qa_list" not in st.session_state:
-    st.session_state.qa_list = []
-
-if "previous_answers" not in st.session_state:
-    st.session_state.previous_answers = ""
-
-if "last_question" not in st.session_state:
-    st.session_state.last_question = ""
-
-if "interview_started" not in st.session_state:
-    st.session_state.interview_started = False
-
-if "question_count" not in st.session_state:
-    st.session_state.question_count = 0
-
-if "interview_ended" not in st.session_state:
-    st.session_state.interview_ended = False
-
-if "final_report" not in st.session_state:
-    st.session_state.final_report = None
+init_session()
 
 
 # ---------------- RESET INTERVIEW ----------------
@@ -75,6 +69,9 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
+
+    if "text_answer" in st.session_state:
+        st.session_state["text_answer"] = ""
 
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -102,18 +99,18 @@ else:
     st.session_state.page = "HR"
 
 
-# ---------------- HR DASHBOARD LOGIN PAGE ----------------
+# ---------------- HR DASHBOARD LOGIN ----------------
 if st.session_state.page == "HR":
 
     if not st.session_state.hr_logged_in:
 
         st.markdown("<h1 class='main-title'>🔐 HR Login</h1>", unsafe_allow_html=True)
-        st.markdown("<p class='subtitle'>Only HR/Admin can access reports.</p>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitle'>Only HR/Admin can access interview reports.</p>", unsafe_allow_html=True)
 
         password = st.text_input("Enter HR Password", type="password")
 
         if st.button("Login"):
-            if password == os.getenv("HR_PASSWORD"):
+            if password == st.secrets["HR_PASSWORD"]:
                 st.session_state.hr_logged_in = True
                 st.success("✅ Login successful!")
                 st.rerun()
@@ -133,7 +130,8 @@ st.markdown("<p class='subtitle'>MAANG Style Mock Interview + PDF Report + HR Da
 
 st.divider()
 
-# ---------------- ADMIN SETTINGS (Candidate Side) ----------------
+
+# ---------------- SETTINGS ----------------
 st.sidebar.title("🛠️ Interview Settings")
 
 role = st.sidebar.selectbox("Select Role", ["SDE", "Data Scientist", "ML Engineer"])
@@ -145,7 +143,8 @@ TOTAL_QUESTIONS = st.sidebar.slider("Number of Questions", 5, 20, 5)
 mode = st.sidebar.radio("Interview Mode", ["Text Mode", "Voice Mode"])
 
 st.sidebar.divider()
-candidate_name = st.sidebar.text_input("Candidate Name", value="Unknown")
+candidate_name = st.sidebar.text_input("Candidate Name", value=st.session_state.candidate_name)
+st.session_state.candidate_name = candidate_name
 
 
 # ---------------- FILE UPLOAD ----------------
@@ -153,6 +152,9 @@ uploaded_file = st.file_uploader("📌 Upload Resume (PDF/DOCX)", type=["pdf", "
 
 if uploaded_file:
     resume_text = extract_text(uploaded_file)
+    st.session_state.resume_text = resume_text
+
+    st.success("✅ Resume parsed successfully!")
 
     col1, col2 = st.columns(2)
 
@@ -161,6 +163,7 @@ if uploaded_file:
             reset_interview()
 
             q = generate_question(resume_text, "", role, difficulty, interview_type)
+
             st.session_state.last_question = q
             st.session_state.chat.append(("AI", q))
 
@@ -171,15 +174,20 @@ if uploaded_file:
                 voice_file = text_to_speech(q)
                 st.audio(voice_file, format="audio/mp3")
 
+            st.rerun()
+
     with col2:
         if st.button("🛑 End Interview"):
             st.session_state.interview_ended = True
+            st.rerun()
+
 
     # ---------------- CHAT DISPLAY ----------------
     st.subheader("💬 Interview Chat")
 
     for role_msg, msg in st.session_state.chat:
         st.write(f"**{role_msg}:** {msg}")
+
 
     # ---------------- INTERVIEW FLOW ----------------
     if st.session_state.interview_started and not st.session_state.interview_ended:
@@ -209,18 +217,25 @@ if uploaded_file:
 
                     st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
 
-                    q = generate_question(resume_text, st.session_state.previous_answers, role, difficulty, interview_type)
+                    q = generate_question(
+                        st.session_state.resume_text,
+                        st.session_state.previous_answers,
+                        role,
+                        difficulty,
+                        interview_type
+                    )
 
                     st.session_state.last_question = q
                     st.session_state.chat.append(("AI", q))
 
                     st.session_state.question_count += 1
 
-                    st.session_state["text_answer"] = ""  # clear input
+                    st.session_state["text_answer"] = ""
                     st.rerun()
 
                 else:
                     st.warning("⚠️ Please write an answer first!")
+
 
         # ---------------- VOICE MODE ----------------
         if mode == "Voice Mode":
@@ -229,7 +244,7 @@ if uploaded_file:
             audio = mic_recorder(
                 start_prompt="🎙️ Start Recording",
                 stop_prompt="⏹️ Stop Recording",
-                key="mic"
+                key=f"mic_{st.session_state.question_count}"
             )
 
             if audio:
@@ -256,7 +271,13 @@ if uploaded_file:
 
                         st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
 
-                        q = generate_question(resume_text, st.session_state.previous_answers, role, difficulty, interview_type)
+                        q = generate_question(
+                            st.session_state.resume_text,
+                            st.session_state.previous_answers,
+                            role,
+                            difficulty,
+                            interview_type
+                        )
 
                         st.session_state.last_question = q
                         st.session_state.chat.append(("AI", q))
@@ -295,6 +316,7 @@ if uploaded_file:
             report_json=report
         )
 
+        st.success("✅ Report saved to SQLite Database!")
         st.rerun()
 
 
@@ -357,7 +379,6 @@ if uploaded_file:
         if st.button("🔁 Start New Interview"):
             reset_interview()
             st.rerun()
-
 
 else:
     st.info("📌 Upload your resume to start the interview.")
