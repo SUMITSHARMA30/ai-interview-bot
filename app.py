@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import tempfile
 import pandas as pd
@@ -47,28 +48,33 @@ def hide_sidebar():
 
 # ---------------- FULLSCREEN REQUEST ----------------
 def request_fullscreen():
-    st.markdown("""
+    components.html("""
     <script>
     function goFullscreen() {
         let elem = document.documentElement;
         if (elem.requestFullscreen) {
             elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
         }
     }
     </script>
 
     <div style="
-        background:white;
-        padding:20px;
+        background:#ffffff;
+        padding:18px;
         border-radius:14px;
         box-shadow:0px 10px 25px rgba(0,0,0,0.12);
-        margin-bottom:15px;
+        margin-bottom:20px;
         text-align:center;
         font-family:Arial;
     ">
-        <h2 style="margin:0; color:#0f172a;">🎯 Interview Fullscreen Mode</h2>
-        <p style="color:gray; margin-top:5px;">
-            Please enable fullscreen for the best MAANG-style interview experience.
+        <h2 style="margin:0; color:#0f172a;">🎯 Fullscreen Interview Mode</h2>
+
+        <p style="color:#64748b; margin-top:8px; font-size:14px;">
+            Click below to enter fullscreen for real MAANG-style interview experience.
         </p>
 
         <button onclick="goFullscreen()" style="
@@ -82,10 +88,10 @@ def request_fullscreen():
             cursor:pointer;
             width:100%;
         ">
-            Enter Fullscreen
+            Enter Fullscreen 🚀
         </button>
     </div>
-    """, unsafe_allow_html=True)
+    """, height=180)
 
 
 # ---------------- SESSION INIT ----------------
@@ -132,6 +138,23 @@ def reset_interview():
     st.session_state.final_report = None
 
 
+# ---------------- SAFE JSON LOAD ----------------
+def safe_json_load(data):
+    if data is None:
+        return {}
+
+    if isinstance(data, dict):
+        return data
+
+    if isinstance(data, str):
+        try:
+            return json.loads(data)
+        except:
+            return {}
+
+    return {}
+
+
 # ---------------- SPEECH TO TEXT ----------------
 def transcribe_audio(audio_path):
     with open(audio_path, "rb") as f:
@@ -151,10 +174,7 @@ page = st.sidebar.radio(
     index=0
 )
 
-if page == "Candidate Portal":
-    st.session_state.page = "Candidate"
-else:
-    st.session_state.page = "HR"
+st.session_state.page = "Candidate" if page == "Candidate Portal" else "HR"
 
 
 # ---------------- HR DASHBOARD ----------------
@@ -182,7 +202,7 @@ if st.session_state.page == "HR":
         st.stop()
 
 
-# ---------------- CANDIDATE PORTAL ----------------
+# ---------------- CANDIDATE PORTAL HEADER ----------------
 if st.session_state.interview_started and st.session_state.final_report is None:
     hide_sidebar()
 
@@ -222,6 +242,7 @@ if not st.session_state.interview_started and st.session_state.final_report is N
 
         with col1:
             if st.button("🚀 Start Interview"):
+
                 reset_interview()
 
                 q = generate_question(
@@ -235,7 +256,6 @@ if not st.session_state.interview_started and st.session_state.final_report is N
                 st.session_state.last_question = q
                 st.session_state.interview_started = True
                 st.session_state.question_count = 1
-
                 st.rerun()
 
         with col2:
@@ -252,6 +272,7 @@ if not st.session_state.interview_started and st.session_state.final_report is N
 if st.session_state.interview_started and not st.session_state.interview_ended:
 
     hide_sidebar()
+
     request_fullscreen()
 
     TOTAL_QUESTIONS = st.session_state.total_questions
@@ -265,9 +286,9 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
     st.markdown(f"""
     <div style="
         background:#ffffff;
-        padding:20px;
-        border-radius:16px;
-        box-shadow:0px 10px 30px rgba(0,0,0,0.08);
+        padding:22px;
+        border-radius:18px;
+        box-shadow:0px 12px 35px rgba(0,0,0,0.08);
         font-size:20px;
         font-weight:700;
         color:#0f172a;
@@ -282,12 +303,12 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
     if mode == "Text Mode":
 
         answer_key = f"text_answer_{st.session_state.question_count}"
-        user_answer = st.text_area("✍️ Type your answer:", key=answer_key, height=220)
+        user_answer = st.text_area("✍️ Type your answer:", key=answer_key, height=230)
 
         colA, colB = st.columns(2)
 
         with colA:
-            if st.button("✅ Submit Answer"):
+            if st.button("✅ Submit Answer & Next"):
                 if user_answer.strip():
 
                     st.session_state.qa_list.append({
@@ -348,7 +369,7 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
             colA, colB = st.columns(2)
 
             with colA:
-                if st.button("🚀 Submit Voice Answer"):
+                if st.button("🚀 Submit Voice Answer & Next"):
                     if user_answer_voice.strip():
 
                         st.session_state.qa_list.append({
@@ -402,18 +423,7 @@ if st.session_state.interview_ended and st.session_state.final_report is None:
         interview_type=st.session_state.interview_type
     )
 
-    # ✅ force report to dict
-    if report is None:
-        report = {}
-
-    if isinstance(report, str):
-        try:
-            report = json.loads(report)
-        except:
-            report = {}
-
-    if not isinstance(report, dict):
-        report = {}
+    report = safe_json_load(report)
 
     st.session_state.final_report = report
 
@@ -435,20 +445,7 @@ if st.session_state.final_report:
 
     hide_sidebar()
 
-    report = st.session_state.final_report
-
-    # ✅ force report to dict
-    if report is None:
-        report = {}
-
-    if isinstance(report, str):
-        try:
-            report = json.loads(report)
-        except:
-            report = {}
-
-    if not isinstance(report, dict):
-        report = {}
+    report = safe_json_load(st.session_state.final_report)
 
     st.divider()
     st.subheader("📊 Final Interview Report")
