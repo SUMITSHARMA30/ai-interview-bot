@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import tempfile
 import pandas as pd
@@ -49,9 +50,9 @@ def hide_sidebar():
     """, unsafe_allow_html=True)
 
 
-# ---------------- FULLSCREEN POPUP ----------------
+# ---------------- FULLSCREEN POPUP (WORKING) ----------------
 def fullscreen_popup():
-    st.markdown("""
+    components.html("""
     <script>
     function openFullscreen() {
       let elem = document.documentElement;
@@ -67,15 +68,16 @@ def fullscreen_popup():
 
     <div style="
         background:white;
-        padding:20px;
-        border-radius:16px;
+        padding:25px;
+        border-radius:18px;
         box-shadow:0px 10px 30px rgba(0,0,0,0.08);
         text-align:center;
+        font-family:Arial;
         margin-bottom:20px;
     ">
-        <h2 style="color:#0f172a;">🚀 Fullscreen Interview Mode</h2>
-        <p style="color:gray; font-size:15px;">
-            Please enable fullscreen for a real MAANG-style interview experience.
+        <h2 style="color:#0f172a; margin-bottom:5px;">🚀 Fullscreen Interview Mode</h2>
+        <p style="color:gray; font-size:15px; margin-top:0;">
+            Please enable fullscreen for the best MAANG-style interview experience.
         </p>
 
         <button onclick="openFullscreen()" style="
@@ -92,7 +94,7 @@ def fullscreen_popup():
         Enter Fullscreen
         </button>
     </div>
-    """, unsafe_allow_html=True)
+    """, height=200)
 
 
 # ---------------- SESSION INIT ----------------
@@ -190,7 +192,6 @@ if st.session_state.page == "HR":
 
 
 # ---------------- CANDIDATE PORTAL ----------------
-# If interview is started -> hide sidebar completely
 if st.session_state.interview_started and not st.session_state.final_report:
     hide_sidebar()
 
@@ -402,7 +403,6 @@ if st.session_state.interview_ended and st.session_state.final_report is None:
         interview_type=st.session_state.interview_type
     )
 
-    # FIX: If evaluator returns string JSON
     if isinstance(report, str):
         report = json.loads(report)
 
