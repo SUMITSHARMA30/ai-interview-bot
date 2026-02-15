@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
-import json
 
 from resume_parser import extract_text
 from ai_engine import generate_question
@@ -30,7 +29,7 @@ def load_css():
         with open("styles.css") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     except:
-        st.warning("CSS file missing!")
+        st.warning("⚠️ styles.css file missing!")
 
 load_css()
 
@@ -69,9 +68,6 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
-
-    if "text_answer" in st.session_state:
-        st.session_state["text_answer"] = ""
 
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -203,7 +199,9 @@ if uploaded_file:
         if mode == "Text Mode":
             st.subheader("⌨️ Text Answer Mode")
 
-            user_answer = st.text_area("Write your answer here:", key="text_answer")
+            # ✅ FIX: dynamic key so previous answer doesn't remain
+            answer_key = f"text_answer_{st.session_state.question_count}"
+            user_answer = st.text_area("Write your answer here:", key=answer_key)
 
             if st.button("✅ Submit Answer"):
                 if user_answer.strip():
@@ -229,8 +227,6 @@ if uploaded_file:
                     st.session_state.chat.append(("AI", q))
 
                     st.session_state.question_count += 1
-
-                    st.session_state["text_answer"] = ""
                     st.rerun()
 
                 else:
@@ -241,6 +237,7 @@ if uploaded_file:
         if mode == "Voice Mode":
             st.subheader("🎤 Voice Answer Mode")
 
+            # ✅ FIX: unique mic key per question
             audio = mic_recorder(
                 start_prompt="🎙️ Start Recording",
                 stop_prompt="⏹️ Stop Recording",
