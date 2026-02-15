@@ -34,12 +34,42 @@ def load_css():
 load_css()
 
 
+# ---------------- FULLSCREEN BUTTON ----------------
+st.markdown("""
+<script>
+function openFullscreen() {
+  let elem = document.documentElement;
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) {
+    elem.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) {
+    elem.msRequestFullscreen();
+  }
+}
+</script>
+
+<button onclick="openFullscreen()" style="
+    background: #2563eb;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 15px;
+">
+🚀 Enter Full Screen Interview Mode
+</button>
+""", unsafe_allow_html=True)
+
+
 # ---------------- SESSION INIT ----------------
 def init_session():
     defaults = {
         "page": "Candidate",
         "hr_logged_in": False,
-        "chat": [],
         "qa_list": [],
         "previous_answers": "",
         "last_question": "",
@@ -55,12 +85,12 @@ def init_session():
         if k not in st.session_state:
             st.session_state[k] = v
 
+
 init_session()
 
 
 # ---------------- RESET INTERVIEW ----------------
 def reset_interview():
-    st.session_state.chat = []
     st.session_state.qa_list = []
     st.session_state.previous_answers = ""
     st.session_state.last_question = ""
@@ -122,7 +152,7 @@ if st.session_state.page == "HR":
 
 # ---------------- CANDIDATE PORTAL ----------------
 st.markdown("<h1 class='main-title'>🤖 AI Powered Interview Bot</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>MAANG Style Mock Interview + PDF Report + HR Dashboard</p>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>MAANG Style Mock Interview • Groq Powered • PDF Report + HR Dashboard</p>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -161,8 +191,6 @@ if uploaded_file:
             q = generate_question(resume_text, "", role, difficulty, interview_type)
 
             st.session_state.last_question = q
-            st.session_state.chat.append(("AI", q))
-
             st.session_state.interview_started = True
             st.session_state.question_count = 1
 
@@ -178,13 +206,6 @@ if uploaded_file:
             st.rerun()
 
 
-    # ---------------- CHAT DISPLAY ----------------
-    st.subheader("💬 Interview Chat")
-
-    for role_msg, msg in st.session_state.chat:
-        st.write(f"**{role_msg}:** {msg}")
-
-
     # ---------------- INTERVIEW FLOW ----------------
     if st.session_state.interview_started and not st.session_state.interview_ended:
 
@@ -192,21 +213,25 @@ if uploaded_file:
             st.session_state.interview_ended = True
             st.rerun()
 
-        st.divider()
-        st.write(f"📌 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
+        # Progress bar
+        st.progress(st.session_state.question_count / TOTAL_QUESTIONS)
+
+        st.markdown(f"### 🧠 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
+        st.markdown("---")
+
+        # Show ONLY current question
+        st.markdown(f"## ❓ {st.session_state.last_question}")
+        st.markdown("---")
 
         # ---------------- TEXT MODE ----------------
         if mode == "Text Mode":
-            st.subheader("⌨️ Text Answer Mode")
+            st.subheader("⌨️ Type Your Answer")
 
-            # ✅ FIX: dynamic key so previous answer doesn't remain
             answer_key = f"text_answer_{st.session_state.question_count}"
-            user_answer = st.text_area("Write your answer here:", key=answer_key)
+            user_answer = st.text_area("Answer:", key=answer_key, height=180)
 
-            if st.button("✅ Submit Answer"):
+            if st.button("✅ Submit Answer & Continue"):
                 if user_answer.strip():
-
-                    st.session_state.chat.append(("You", user_answer))
 
                     st.session_state.qa_list.append({
                         "question": st.session_state.last_question,
@@ -215,6 +240,12 @@ if uploaded_file:
 
                     st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
 
+                    # If last question done
+                    if st.session_state.question_count >= TOTAL_QUESTIONS:
+                        st.session_state.interview_ended = True
+                        st.rerun()
+
+                    # Generate next question
                     q = generate_question(
                         st.session_state.resume_text,
                         st.session_state.previous_answers,
@@ -224,20 +255,17 @@ if uploaded_file:
                     )
 
                     st.session_state.last_question = q
-                    st.session_state.chat.append(("AI", q))
-
                     st.session_state.question_count += 1
                     st.rerun()
 
                 else:
-                    st.warning("⚠️ Please write an answer first!")
+                    st.warning("⚠️ Please type an answer first!")
 
 
         # ---------------- VOICE MODE ----------------
         if mode == "Voice Mode":
-            st.subheader("🎤 Voice Answer Mode")
+            st.subheader("🎤 Voice Mode Answer")
 
-            # ✅ FIX: unique mic key per question
             audio = mic_recorder(
                 start_prompt="🎙️ Start Recording",
                 stop_prompt="⏹️ Stop Recording",
@@ -256,10 +284,8 @@ if uploaded_file:
                 st.success("✅ Transcribed Answer:")
                 st.write(user_answer_voice)
 
-                if st.button("🚀 Submit Voice Answer"):
+                if st.button("🚀 Submit Voice Answer & Continue"):
                     if user_answer_voice.strip():
-
-                        st.session_state.chat.append(("You", user_answer_voice))
 
                         st.session_state.qa_list.append({
                             "question": st.session_state.last_question,
@@ -268,6 +294,12 @@ if uploaded_file:
 
                         st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
 
+                        # If last question done
+                        if st.session_state.question_count >= TOTAL_QUESTIONS:
+                            st.session_state.interview_ended = True
+                            st.rerun()
+
+                        # Generate next question
                         q = generate_question(
                             st.session_state.resume_text,
                             st.session_state.previous_answers,
@@ -277,8 +309,6 @@ if uploaded_file:
                         )
 
                         st.session_state.last_question = q
-                        st.session_state.chat.append(("AI", q))
-
                         st.session_state.question_count += 1
 
                         voice_file = text_to_speech(q)
@@ -287,7 +317,7 @@ if uploaded_file:
                         st.rerun()
 
                     else:
-                        st.warning("⚠️ Voice answer is empty. Try again.")
+                        st.warning("⚠️ Voice answer empty, try again!")
 
 
     # ---------------- FINAL REPORT GENERATION ----------------
@@ -329,6 +359,7 @@ if uploaded_file:
         st.write(f"🎯 Role: **{role}**")
         st.write(f"⚡ Difficulty: **{difficulty}**")
         st.write(f"📌 Type: **{interview_type}**")
+        st.write(f"🎤 Mode: **{mode}**")
 
         overall_score = report.get("overall_score", 0)
         verdict = report.get("verdict", "Unknown")
@@ -343,7 +374,6 @@ if uploaded_file:
         st.subheader("📌 Improvement Plan")
         st.write(report.get("improvement_plan", ""))
 
-        # ---------------- QUESTION TABLE ----------------
         st.divider()
         st.subheader("📋 Question Wise Evaluation Table")
 
@@ -357,12 +387,13 @@ if uploaded_file:
         st.divider()
         st.subheader("📄 Download PDF Report")
 
+        # ✅ FIXED: positional args (no keyword TypeError)
         pdf_file = generate_pdf_report(
-            candidate_name=candidate_name,
-            role=role,
-            difficulty=difficulty,
-            interview_type=interview_type,
-            report=report
+            candidate_name,
+            role,
+            difficulty,
+            interview_type,
+            report
         )
 
         st.download_button(
