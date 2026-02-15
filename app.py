@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import os
 import tempfile
 import pandas as pd
@@ -36,65 +35,30 @@ def load_css():
 load_css()
 
 
-# ---------------- HIDE SIDEBAR (INTERVIEW MODE) ----------------
+# ---------------- HIDE SIDEBAR ----------------
 def hide_sidebar():
     st.markdown("""
         <style>
-        section[data-testid="stSidebar"] {
-            display: none !important;
-        }
-        div[data-testid="stSidebarNav"] {
-            display: none !important;
-        }
+        section[data-testid="stSidebar"] {display: none !important;}
+        div[data-testid="stSidebarNav"] {display: none !important;}
         </style>
     """, unsafe_allow_html=True)
 
 
-# ---------------- FULLSCREEN POPUP (WORKING) ----------------
-def fullscreen_popup():
-    components.html("""
+# ---------------- FORCE FULLSCREEN SCRIPT ----------------
+def request_fullscreen():
+    st.markdown("""
     <script>
-    function openFullscreen() {
-      let elem = document.documentElement;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-      }
-    }
+    document.addEventListener("DOMContentLoaded", function() {
+        let elem = document.documentElement;
+        if (!document.fullscreenElement) {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => console.log(err));
+            }
+        }
+    });
     </script>
-
-    <div style="
-        background:white;
-        padding:25px;
-        border-radius:18px;
-        box-shadow:0px 10px 30px rgba(0,0,0,0.08);
-        text-align:center;
-        font-family:Arial;
-        margin-bottom:20px;
-    ">
-        <h2 style="color:#0f172a; margin-bottom:5px;">🚀 Fullscreen Interview Mode</h2>
-        <p style="color:gray; font-size:15px; margin-top:0;">
-            Please enable fullscreen for the best MAANG-style interview experience.
-        </p>
-
-        <button onclick="openFullscreen()" style="
-            background:#2563eb;
-            color:white;
-            padding:12px 18px;
-            border-radius:12px;
-            border:none;
-            font-weight:700;
-            cursor:pointer;
-            font-size:16px;
-            width:100%;
-        ">
-        Enter Fullscreen
-        </button>
-    </div>
-    """, height=200)
+    """, unsafe_allow_html=True)
 
 
 # ---------------- SESSION INIT ----------------
@@ -130,7 +94,7 @@ def init_session():
 init_session()
 
 
-# ---------------- RESET INTERVIEW ----------------
+# ---------------- RESET ----------------
 def reset_interview():
     st.session_state.qa_list = []
     st.session_state.previous_answers = ""
@@ -166,7 +130,7 @@ else:
     st.session_state.page = "HR"
 
 
-# ---------------- HR DASHBOARD LOGIN ----------------
+# ---------------- HR DASHBOARD ----------------
 if st.session_state.page == "HR":
 
     if not st.session_state.hr_logged_in:
@@ -194,14 +158,15 @@ if st.session_state.page == "HR":
 # ---------------- CANDIDATE PORTAL ----------------
 if st.session_state.interview_started and not st.session_state.final_report:
     hide_sidebar()
+    request_fullscreen()
 
 st.markdown("<h1 class='main-title'>🤖 AI Powered Interview Bot</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>MAANG Style Mock Interview • Groq Powered • PDF Report + HR Dashboard</p>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>MAANG Style Interview • Groq Powered • PDF Report + HR Dashboard</p>", unsafe_allow_html=True)
 
 st.divider()
 
 
-# ---------------- SETTINGS (ONLY BEFORE INTERVIEW STARTS) ----------------
+# ---------------- SETTINGS (ONLY BEFORE START) ----------------
 if not st.session_state.interview_started and st.session_state.final_report is None:
 
     st.sidebar.title("🛠️ Interview Settings")
@@ -218,7 +183,7 @@ if not st.session_state.interview_started and st.session_state.final_report is N
     st.session_state.candidate_name = st.sidebar.text_input("Candidate Name", value=st.session_state.candidate_name)
 
 
-# ---------------- FILE UPLOAD (ONLY BEFORE INTERVIEW STARTS) ----------------
+# ---------------- UPLOAD (ONLY BEFORE START) ----------------
 if not st.session_state.interview_started and st.session_state.final_report is None:
 
     uploaded_file = st.file_uploader("📌 Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
@@ -259,23 +224,16 @@ if not st.session_state.interview_started and st.session_state.final_report is N
         st.stop()
 
 
-# ---------------- INTERVIEW MODE (ONLY QUESTION SCREEN) ----------------
+# ---------------- INTERVIEW SCREEN ----------------
 if st.session_state.interview_started and not st.session_state.interview_ended:
-
-    fullscreen_popup()
 
     TOTAL_QUESTIONS = st.session_state.total_questions
     mode = st.session_state.mode
-
-    if st.session_state.question_count > TOTAL_QUESTIONS:
-        st.session_state.interview_ended = True
-        st.rerun()
 
     st.progress(st.session_state.question_count / TOTAL_QUESTIONS)
 
     st.markdown(f"### 🧠 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
     st.markdown("---")
-
     st.markdown(f"## ❓ {st.session_state.last_question}")
     st.markdown("---")
 
@@ -318,7 +276,7 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
                     st.warning("⚠️ Please type an answer first!")
 
         with colB:
-            if st.button("🛑 End Interview Now"):
+            if st.button("🛑 End Interview"):
                 st.session_state.interview_ended = True
                 st.rerun()
 
@@ -383,7 +341,7 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
                         st.warning("⚠️ Voice answer empty. Try again!")
 
             with colB:
-                if st.button("🛑 End Interview Now"):
+                if st.button("🛑 End Interview"):
                     st.session_state.interview_ended = True
                     st.rerun()
 
@@ -406,6 +364,9 @@ if st.session_state.interview_ended and st.session_state.final_report is None:
     if isinstance(report, str):
         report = json.loads(report)
 
+    if report is None:
+        report = {}
+
     st.session_state.final_report = report
 
     save_report(
@@ -427,6 +388,9 @@ if st.session_state.final_report:
     hide_sidebar()
 
     report = st.session_state.final_report
+
+    if isinstance(report, str):
+        report = json.loads(report)
 
     st.divider()
     st.subheader("📊 Final Interview Report")
