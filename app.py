@@ -19,8 +19,8 @@ from hr_dashboard import hr_dashboard
 
 # ---------------- CONFIG ----------------
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
-
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 init_db()
 
 
@@ -31,7 +31,6 @@ def load_css():
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     except:
         pass
-
 
 load_css()
 
@@ -46,52 +45,51 @@ def hide_sidebar():
     """, unsafe_allow_html=True)
 
 
-# ---------------- FULLSCREEN REQUEST ----------------
-def request_fullscreen():
+# ---------------- FULLSCREEN PROMPT ----------------
+def fullscreen_prompt():
     components.html("""
-    <script>
-    function goFullscreen() {
-        let elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-            elem.msRequestFullscreen();
+        <script>
+        function goFullscreen() {
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
         }
-    }
-    </script>
+        </script>
 
-    <div style="
-        background:#ffffff;
-        padding:18px;
-        border-radius:14px;
-        box-shadow:0px 10px 25px rgba(0,0,0,0.12);
-        margin-bottom:20px;
-        text-align:center;
-        font-family:Arial;
-    ">
-        <h2 style="margin:0; color:#0f172a;">🎯 Fullscreen Interview Mode</h2>
-
-        <p style="color:#64748b; margin-top:8px; font-size:14px;">
-            Click below to enter fullscreen for real MAANG-style interview experience.
-        </p>
-
-        <button onclick="goFullscreen()" style="
-            background:#2563eb;
-            color:white;
-            padding:12px 20px;
-            border:none;
-            border-radius:12px;
-            font-size:16px;
-            font-weight:700;
-            cursor:pointer;
-            width:100%;
+        <div style="
+            background:white;
+            padding:20px;
+            border-radius:14px;
+            box-shadow:0px 10px 25px rgba(0,0,0,0.12);
+            margin-bottom:20px;
+            text-align:center;
+            font-family:Arial;
         ">
-            Enter Fullscreen 🚀
-        </button>
-    </div>
-    """, height=180)
+            <h2 style="margin:0; color:#0f172a;">🚀 Interview Fullscreen Mode</h2>
+            <p style="color:gray; margin-top:5px;">
+                Click below to enter fullscreen for MAANG-style interview experience.
+            </p>
+
+            <button onclick="goFullscreen()" style="
+                background:#2563eb;
+                color:white;
+                padding:12px 20px;
+                border:none;
+                border-radius:12px;
+                font-size:16px;
+                font-weight:700;
+                cursor:pointer;
+                width:100%;
+            ">
+                Enter Fullscreen 🚀
+            </button>
+        </div>
+    """, height=220)
 
 
 # ---------------- SESSION INIT ----------------
@@ -123,11 +121,10 @@ def init_session():
         if k not in st.session_state:
             st.session_state[k] = v
 
-
 init_session()
 
 
-# ---------------- RESET INTERVIEW ----------------
+# ---------------- RESET ----------------
 def reset_interview():
     st.session_state.qa_list = []
     st.session_state.previous_answers = ""
@@ -136,23 +133,6 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
-
-
-# ---------------- SAFE JSON LOAD ----------------
-def safe_json_load(data):
-    if data is None:
-        return {}
-
-    if isinstance(data, dict):
-        return data
-
-    if isinstance(data, str):
-        try:
-            return json.loads(data)
-        except:
-            return {}
-
-    return {}
 
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -167,12 +147,7 @@ def transcribe_audio(audio_path):
 
 # ---------------- NAVIGATION ----------------
 st.sidebar.title("🌍 Navigation")
-
-page = st.sidebar.radio(
-    "Choose Portal",
-    ["Candidate Portal", "HR Dashboard"],
-    index=0
-)
+page = st.sidebar.radio("Choose Portal", ["Candidate Portal", "HR Dashboard"], index=0)
 
 st.session_state.page = "Candidate" if page == "Candidate Portal" else "HR"
 
@@ -197,12 +172,11 @@ if st.session_state.page == "HR":
 
         st.stop()
 
-    else:
-        hr_dashboard()
-        st.stop()
+    hr_dashboard()
+    st.stop()
 
 
-# ---------------- CANDIDATE PORTAL HEADER ----------------
+# ---------------- CANDIDATE PORTAL ----------------
 if st.session_state.interview_started and st.session_state.final_report is None:
     hide_sidebar()
 
@@ -233,9 +207,7 @@ if not st.session_state.interview_started and st.session_state.final_report is N
     uploaded_file = st.file_uploader("📌 Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
 
     if uploaded_file:
-        resume_text = extract_text(uploaded_file)
-        st.session_state.resume_text = resume_text
-
+        st.session_state.resume_text = extract_text(uploaded_file)
         st.success("✅ Resume parsed successfully!")
 
         col1, col2 = st.columns(2)
@@ -272,8 +244,7 @@ if not st.session_state.interview_started and st.session_state.final_report is N
 if st.session_state.interview_started and not st.session_state.interview_ended:
 
     hide_sidebar()
-
-    request_fullscreen()
+    fullscreen_prompt()
 
     TOTAL_QUESTIONS = st.session_state.total_questions
     mode = st.session_state.mode
@@ -286,9 +257,9 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
     st.markdown(f"""
     <div style="
         background:#ffffff;
-        padding:22px;
-        border-radius:18px;
-        box-shadow:0px 12px 35px rgba(0,0,0,0.08);
+        padding:20px;
+        border-radius:16px;
+        box-shadow:0px 10px 30px rgba(0,0,0,0.08);
         font-size:20px;
         font-weight:700;
         color:#0f172a;
@@ -299,16 +270,18 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
 
     st.markdown("---")
 
+
     # ---------------- TEXT MODE ----------------
     if mode == "Text Mode":
 
         answer_key = f"text_answer_{st.session_state.question_count}"
-        user_answer = st.text_area("✍️ Type your answer:", key=answer_key, height=230)
+        user_answer = st.text_area("✍️ Type your answer:", key=answer_key, height=220)
 
         colA, colB = st.columns(2)
 
         with colA:
             if st.button("✅ Submit Answer & Next"):
+
                 if user_answer.strip():
 
                     st.session_state.qa_list.append({
@@ -336,6 +309,7 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
 
                 else:
                     st.warning("⚠️ Please type an answer first!")
+
 
         with colB:
             if st.button("🛑 End Interview Now"):
@@ -369,7 +343,8 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
             colA, colB = st.columns(2)
 
             with colA:
-                if st.button("🚀 Submit Voice Answer & Next"):
+                if st.button("🚀 Submit Voice Answer"):
+
                     if user_answer_voice.strip():
 
                         st.session_state.qa_list.append({
@@ -402,6 +377,7 @@ if st.session_state.interview_started and not st.session_state.interview_ended:
                     else:
                         st.warning("⚠️ Voice answer empty. Try again!")
 
+
             with colB:
                 if st.button("🛑 End Interview"):
                     st.session_state.interview_ended = True
@@ -423,7 +399,17 @@ if st.session_state.interview_ended and st.session_state.final_report is None:
         interview_type=st.session_state.interview_type
     )
 
-    report = safe_json_load(report)
+    if report is None:
+        report = {}
+
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except:
+            report = {}
+
+    if not isinstance(report, dict):
+        report = {}
 
     st.session_state.final_report = report
 
@@ -445,7 +431,19 @@ if st.session_state.final_report:
 
     hide_sidebar()
 
-    report = safe_json_load(st.session_state.final_report)
+    report = st.session_state.final_report
+
+    if report is None:
+        report = {}
+
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except:
+            report = {}
+
+    if not isinstance(report, dict):
+        report = {}
 
     st.divider()
     st.subheader("📊 Final Interview Report")
