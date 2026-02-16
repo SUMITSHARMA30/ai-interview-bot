@@ -35,6 +35,21 @@ def load_css():
 
 load_css()
 
+def safe_json(report):
+    if report is None:
+        return {}
+
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except:
+            return {}
+
+    if not isinstance(report, dict):
+        return {}
+
+    return report
+
 
 # ---------------- HIDE SIDEBAR ----------------
 def hide_sidebar():
