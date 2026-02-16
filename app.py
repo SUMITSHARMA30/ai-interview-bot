@@ -47,68 +47,6 @@ def hide_sidebar():
 
 
 # ---------------- FULLSCREEN PROMPT ----------------
-def fullscreen_prompt():
-    components.html("""
-        <script>
-        function goFullscreen() {
-            let elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
-        }
-        </script>
-
-        <div style="
-            background:white;
-            padding:20px;
-            border-radius:14px;
-            box-shadow:0px 10px 25px rgba(0,0,0,0.12);
-            margin-bottom:20px;
-            text-align:center;
-            font-family:Arial;
-        ">
-            <h2 style="margin:0; color:#0f172a;">🚀 Fullscreen Interview Mode</h2>
-            <p style="color:gray; margin-top:5px;">
-                Click below to enter fullscreen for MAANG-style interview experience.
-            </p>
-
-            <button onclick="goFullscreen()" style="
-                background:#2563eb;
-                color:white;
-                padding:12px 20px;
-                border:none;
-                border-radius:12px;
-                font-size:16px;
-                font-weight:700;
-                cursor:pointer;
-                width:100%;
-            ">
-                Enter Fullscreen 🚀
-            </button>
-        </div>
-    """, height=220)
-
-
-# ---------------- SAFE JSON ----------------
-def safe_json(report):
-    if report is None:
-        return {}
-
-    if isinstance(report, str):
-        try:
-            report = json.loads(report)
-        except:
-            return {}
-
-    if not isinstance(report, dict):
-        return {}
-
-    return report
-
 
 # ---------------- SESSION INIT ----------------
 def init_session():
@@ -336,10 +274,6 @@ if st.session_state.page == "CANDIDATE_LOGIN":
 if st.session_state.page == "INTERVIEW":
 
     hide_sidebar()
-
-    if not st.session_state.fullscreen_shown:
-        fullscreen_prompt()
-        st.session_state.fullscreen_shown = True
 
     TOTAL_QUESTIONS = st.session_state.total_questions
     mode = st.session_state.mode

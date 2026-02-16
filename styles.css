@@ -303,3 +303,38 @@ input::placeholder {
 [data-testid="stDataFrame"] * {
     color: #0f172a !important;
 }
+/* ============================
+   FIX INPUT TEXT VISIBILITY
+============================ */
+
+/* Input + textarea background should be WHITE */
+input, textarea {
+    background: white !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    border-radius: 14px !important;
+    border: 2px solid rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Fix password dots visibility */
+input[type="password"] {
+    color: #0f172a !important;
+}
+
+/* Placeholder */
+input::placeholder, textarea::placeholder {
+    color: #64748b !important;
+    font-weight: 700 !important;
+}
+
+/* Streamlit input container */
+div[data-testid="stTextInput"] input {
+    background: white !important;
+    color: #0f172a !important;
+}
+
+/* Streamlit textarea container */
+div[data-testid="stTextArea"] textarea {
+    background: white !important;
+    color: #0f172a !important;
+}
