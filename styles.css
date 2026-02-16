@@ -338,3 +338,20 @@ div[data-testid="stTextArea"] textarea {
     background: white !important;
     color: #0f172a !important;
 }
+/* Fix JSON visibility */
+div[data-testid="stJson"] {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 14px !important;
+    padding: 15px !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+}
+
+/* Fix code block visibility */
+pre, code {
+    background: rgba(255, 255, 255, 0.10) !important;
+    color: #38bdf8 !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+}
