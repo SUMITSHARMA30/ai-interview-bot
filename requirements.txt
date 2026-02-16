@@ -7,5 +7,6 @@ groq
 reportlab
 python-docx
 PyPDF2
+pdfplumber
 streamlit-mic-recorder
 gTTS
