@@ -146,7 +146,9 @@ def hr_dashboard():
         st.divider()
 
         st.markdown("### 🧾 Full JSON Report")
-        st.json(report_data["report_json"])
+        import json
+        st.code(json.dumps(report_data["report_json"], indent=4), language="json")
+
 
         st.divider()
 

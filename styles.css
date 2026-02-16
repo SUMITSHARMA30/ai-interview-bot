@@ -355,3 +355,12 @@ pre, code {
     border-radius: 12px !important;
     font-weight: 700 !important;
 }
+pre {
+    background: rgba(255,255,255,0.10) !important;
+    color: #38bdf8 !important;
+    border-radius: 14px !important;
+    padding: 20px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+}
