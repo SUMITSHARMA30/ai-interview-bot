@@ -1,10 +1,9 @@
 streamlit
-pdfplumber
-python-docx
-python-dotenv
 groq
-pdfminer.six
-pypdfium2
-streamlit-mic-recorder
-gtts
+pandas
 reportlab
+python-docx
+PyPDF2
+streamlit-mic-recorder
+gTTS
+matplotlib
