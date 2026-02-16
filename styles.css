@@ -1,34 +1,21 @@
 /* ============================
-   GLOBAL BODY THEME
+   GLOBAL THEME (LIGHT + NEON)
 ============================ */
-body {
-    background: radial-gradient(circle at top left, #0ea5e9, transparent 50%),
-                radial-gradient(circle at bottom right, #a855f7, transparent 50%),
-                radial-gradient(circle at center, #22c55e, transparent 60%),
-                #0b1220;
-    font-family: 'Segoe UI', sans-serif;
-    color: white;
-}
-
-/* Fix Streamlit main background */
-.stApp {
-    background: radial-gradient(circle at top left, #0ea5e9, transparent 50%),
-                radial-gradient(circle at bottom right, #a855f7, transparent 50%),
-                radial-gradient(circle at center, #22c55e, transparent 60%),
-                #0b1220 !important;
-    font-family: 'Segoe UI', sans-serif;
-    color: white;
+body, .stApp {
+    background: linear-gradient(135deg, #f8fafc, #eef2ff, #fdf2f8) !important;
+    font-family: "Segoe UI", sans-serif !important;
+    color: #0f172a !important;
 }
 
 /* ============================
    TITLES
 ============================ */
 .main-title {
-    font-size: 50px;
+    font-size: 52px;
     font-weight: 900;
     text-align: center;
     margin-top: 20px;
-    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e);
+    background: linear-gradient(90deg, #2563eb, #9333ea, #22c55e);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -36,190 +23,184 @@ body {
 .subtitle {
     text-align: center;
     font-size: 18px;
-    color: #cbd5e1;
+    font-weight: 700;
+    color: #475569;
     margin-top: -10px;
     margin-bottom: 25px;
 }
 
 .glow-line {
-    height: 3px;
-    width: 180px;
+    height: 4px;
+    width: 220px;
     margin: auto;
     margin-top: 10px;
     border-radius: 10px;
-    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e);
-    box-shadow: 0px 0px 20px rgba(56, 189, 248, 0.6);
+    background: linear-gradient(90deg, #2563eb, #9333ea, #22c55e);
+    box-shadow: 0px 0px 25px rgba(147, 51, 234, 0.4);
 }
 
 /* ============================
    CARDS
 ============================ */
-.card-container {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-top: 40px;
-    flex-wrap: wrap;
-}
-
 .gemini-card {
-    width: 320px;
+    width: 340px;
     padding: 25px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0px 0px 30px rgba(56, 189, 248, 0.25);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.12);
     text-align: center;
-    transition: all 0.3s ease-in-out;
+    transition: 0.3s ease;
     cursor: pointer;
-    animation: floatCard 4s ease-in-out infinite;
 }
 
 .gemini-card:hover {
-    transform: translateY(-12px) scale(1.05);
-    box-shadow: 0px 0px 60px rgba(168, 85, 247, 0.4);
-    border: 1px solid rgba(56, 189, 248, 0.5);
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0px 15px 50px rgba(147, 51, 234, 0.25);
+    border: 1px solid rgba(147, 51, 234, 0.35);
 }
 
 .gemini-card h2 {
     font-size: 22px;
-    font-weight: 800;
+    font-weight: 900;
     margin-bottom: 10px;
-    color: white;
+    color: #0f172a;
 }
 
 .gemini-card p {
     font-size: 14px;
-    color: #cbd5e1;
+    font-weight: 600;
+    color: #475569;
     line-height: 1.5;
 }
 
-@keyframes floatCard {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-7px); }
-    100% { transform: translateY(0px); }
-}
-
 /* ============================
-   BUTTONS (STREAMLIT)
+   BUTTONS
 ============================ */
 .stButton button {
     margin-top: 10px;
     width: 100%;
-    padding: 12px !important;
-    font-size: 15px !important;
-    font-weight: 800 !important;
-    border-radius: 14px !important;
+    padding: 14px !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    border-radius: 16px !important;
     border: none !important;
     background: linear-gradient(90deg, #2563eb, #9333ea) !important;
     color: white !important;
     cursor: pointer !important;
     transition: 0.3s ease !important;
+    box-shadow: 0px 8px 25px rgba(37, 99, 235, 0.25);
 }
 
 .stButton button:hover {
-    box-shadow: 0px 0px 25px rgba(56, 189, 248, 0.6) !important;
-    transform: scale(1.03) !important;
+    transform: scale(1.03);
+    box-shadow: 0px 0px 25px rgba(147, 51, 234, 0.45);
 }
 
 /* Download button */
 .stDownloadButton button {
     background: linear-gradient(90deg, #22c55e, #0ea5e9) !important;
-    border-radius: 14px !important;
     font-weight: 900 !important;
+    border-radius: 16px !important;
+    box-shadow: 0px 8px 25px rgba(34, 197, 94, 0.25);
 }
 
 .stDownloadButton button:hover {
-    box-shadow: 0px 0px 25px rgba(34, 197, 94, 0.7) !important;
+    transform: scale(1.03);
+    box-shadow: 0px 0px 25px rgba(34, 197, 94, 0.5);
 }
 
 /* ============================
-   QUESTION CARD UI (NEW)
+   QUESTION CARD (NEON PREMIUM)
 ============================ */
 .question-card {
-    background: rgba(255, 255, 255, 0.06);
-    padding: 28px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 30px;
     border-radius: 22px;
-    backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0px 0px 40px rgba(168, 85, 247, 0.25);
+    border: 2px solid rgba(147, 51, 234, 0.25);
+    box-shadow: 0px 15px 45px rgba(147, 51, 234, 0.18);
     font-size: 22px;
-    font-weight: 800;
-    color: white;
+    font-weight: 900;
+    color: #0f172a;
     line-height: 1.7;
-    transition: 0.3s ease-in-out;
+    transition: 0.3s ease;
 }
 
 .question-card:hover {
     transform: scale(1.01);
-    box-shadow: 0px 0px 60px rgba(56, 189, 248, 0.4);
-    border: 1px solid rgba(56, 189, 248, 0.4);
+    border: 2px solid rgba(37, 99, 235, 0.35);
+    box-shadow: 0px 0px 40px rgba(37, 99, 235, 0.25);
 }
 
-.question-label {
-    font-size: 13px;
+/* Neon badge Q1 Q2 */
+.q-badge {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 14px;
+    font-size: 14px;
     font-weight: 900;
     letter-spacing: 1px;
-    color: #38bdf8;
-    margin-bottom: 10px;
-    text-transform: uppercase;
+    color: white;
+    background: linear-gradient(90deg, #2563eb, #9333ea, #22c55e);
+    box-shadow: 0px 0px 18px rgba(147, 51, 234, 0.35);
+    margin-bottom: 15px;
 }
 
 /* ============================
    TEXT AREA / INPUTS
 ============================ */
 textarea {
-    border-radius: 16px !important;
+    border-radius: 18px !important;
     font-size: 16px !important;
-    font-weight: 600 !important;
-    padding: 14px !important;
-    background: rgba(255, 255, 255, 0.07) !important;
-    color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    font-weight: 700 !important;
+    padding: 16px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    color: #0f172a !important;
+    border: 2px solid rgba(37, 99, 235, 0.18) !important;
     outline: none !important;
 }
 
 textarea:focus {
-    border: 1px solid rgba(56, 189, 248, 0.8) !important;
-    box-shadow: 0px 0px 20px rgba(56, 189, 248, 0.35) !important;
+    border: 2px solid rgba(147, 51, 234, 0.5) !important;
+    box-shadow: 0px 0px 20px rgba(147, 51, 234, 0.25) !important;
 }
 
 /* Input fields */
 input {
-    border-radius: 12px !important;
-    padding: 10px !important;
-    font-weight: 600 !important;
+    border-radius: 14px !important;
+    padding: 12px !important;
+    font-weight: 700 !important;
 }
 
 /* ============================
-   DATAFRAME STYLING
+   DATAFRAME
 ============================ */
 [data-testid="stDataFrame"] {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.75) !important;
+    border-radius: 18px !important;
     padding: 10px !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    box-shadow: 0px 0px 25px rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.10);
 }
 
 /* ============================
    PROGRESS BAR
 ============================ */
 .stProgress > div > div {
-    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e) !important;
+    background: linear-gradient(90deg, #2563eb, #9333ea, #22c55e) !important;
     border-radius: 10px !important;
 }
 
 /* ============================
-   HR DASHBOARD METRICS
+   METRICS
 ============================ */
 [data-testid="stMetric"] {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0px 0px 20px rgba(168, 85, 247, 0.12);
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 18px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.08);
 }
 
 /* ============================

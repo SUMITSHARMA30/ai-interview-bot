@@ -346,9 +346,14 @@ if st.session_state.page == "INTERVIEW":
 
     st.progress(st.session_state.question_count / TOTAL_QUESTIONS)
 
-    st.markdown(f"### 🧠 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
-    st.markdown(f"🎯 Role: **{st.session_state.role}** | ⚡ Difficulty: **{st.session_state.difficulty}**")
-    st.markdown("---")
+ st.markdown(f"""
+<div class="question-card">
+    <div class="q-badge">Q{st.session_state.question_count}</div>
+    {st.session_state.last_question}
+</div>
+""", unsafe_allow_html=True)
+
+
 
     st.markdown(f"""
     <div style="
@@ -360,7 +365,7 @@ if st.session_state.page == "INTERVIEW":
         font-weight:800;
         color:#0f172a;
     ">
-        ❓ {st.session_state.last_question}
+         {st.session_state.last_question}
     </div>
     """, unsafe_allow_html=True)
 
@@ -589,3 +594,4 @@ if st.session_state.page == "FINAL_REPORT":
         if st.button("🏠 Go to Home", use_container_width=True):
             st.session_state.page = "Landing"
             st.rerun()
+s
