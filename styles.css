@@ -213,3 +213,37 @@ footer {
 header {
     visibility: hidden;
 }
+/* ============================
+   FORCE TEXT COLOR FIX
+============================ */
+html, body, .stApp {
+    color: #0f172a !important;
+}
+
+/* Fix Streamlit default text */
+p, span, label, div, h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Keep subtitle gray */
+.subtitle {
+    color: #475569 !important;
+}
+
+/* Make question card text darker */
+.question-card {
+    color: #0f172a !important;
+}
+
+/* Input labels */
+.stTextInput label, .stTextArea label, .stFileUploader label {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+
+/* Fix placeholder text */
+input::placeholder, textarea::placeholder {
+    color: #64748b !important;
+    font-weight: 700 !important;
+}
