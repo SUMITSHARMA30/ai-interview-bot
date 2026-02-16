@@ -247,3 +247,59 @@ input::placeholder, textarea::placeholder {
     color: #64748b !important;
     font-weight: 700 !important;
 }
+/* ============================
+   STREAMLIT TEXT COLOR FIX (FINAL)
+============================ */
+
+/* Main app text */
+.stApp, .stApp * {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Titles keep gradient */
+.main-title {
+    -webkit-text-fill-color: transparent !important;
+}
+
+/* Subtitle gray */
+.subtitle {
+    color: #475569 !important;
+}
+
+/* Question badge stays white */
+.q-badge {
+    color: white !important;
+}
+
+/* Question card text */
+.question-card {
+    color: #0f172a !important;
+}
+
+/* Streamlit input labels */
+div[data-testid="stMarkdownContainer"] p,
+div[data-testid="stMarkdownContainer"] span,
+div[data-testid="stMarkdownContainer"] div,
+label,
+small {
+    color: #0f172a !important;
+}
+
+/* Text input + textarea text */
+textarea, input {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Fix placeholder */
+textarea::placeholder,
+input::placeholder {
+    color: #64748b !important;
+    font-weight: 600 !important;
+}
+
+/* Fix dataframe text */
+[data-testid="stDataFrame"] * {
+    color: #0f172a !important;
+}
