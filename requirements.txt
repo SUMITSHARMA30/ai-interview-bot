@@ -1,7 +1,8 @@
+streamlit
+altair
+pandas
 plotly
 matplotlib
-pandas
-streamlit
 groq
 reportlab
 python-docx
