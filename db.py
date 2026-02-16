@@ -13,7 +13,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # ---------------- REPORTS TABLE ----------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,17 +21,27 @@ def init_db():
             difficulty TEXT,
             interview_type TEXT,
             mode TEXT,
-
-            verdict TEXT,
-            overall_score REAL,
-            plagiarism_percentage INTEGER,
-
             report_json TEXT,
             timestamp TEXT
         )
     """)
 
-    # ---------------- ADMIN SETTINGS TABLE ----------------
+    # Add new columns if missing (Migration)
+    try:
+        cursor.execute("ALTER TABLE reports ADD COLUMN verdict TEXT")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE reports ADD COLUMN overall_score REAL")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE reports ADD COLUMN plagiarism_percentage INTEGER")
+    except:
+        pass
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS admin_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,7 +57,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-    # Insert default settings if none exist
     if get_admin_settings() is None:
         save_admin_settings("SDE", "Easy", "Technical", 5, "Text Mode")
 
