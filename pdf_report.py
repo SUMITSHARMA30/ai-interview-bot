@@ -1,210 +1,150 @@
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from io import BytesIO
+import io
+import json
 from datetime import datetime
 
-
-def wrap_text(text, max_chars=95):
-    words = str(text).split()
-    lines = []
-    line = ""
-
-    for word in words:
-        if len(line + word) < max_chars:
-            line += word + " "
-        else:
-            lines.append(line.strip())
-            line = word + " "
-
-    if line:
-        lines.append(line.strip())
-
-    return lines
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import simpleSplit
 
 
-def generate_pdf_report(report, role, difficulty, interview_type, total_questions):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+def generate_pdf_report(candidate_name, role, difficulty, interview_type, report):
+    """
+    Generates a professional PDF interview report.
+    Returns PDF as BYTES (perfect for Streamlit download_button).
+    """
 
+    # ---------------- SAFE JSON ----------------
+    if report is None:
+        report = {}
+
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except:
+            report = {}
+
+    if not isinstance(report, dict):
+        report = {}
+
+    # ---------------- GET REPORT DATA ----------------
     overall_score = report.get("overall_score", 0)
-    verdict = report.get("verdict", "Unknown")
-    summary_feedback = report.get("summary_feedback", "")
-    improvement_plan = report.get("improvement_plan", "")
+    verdict = report.get("verdict", "UNKNOWN")
+    summary_feedback = report.get("summary_feedback", "No summary feedback provided.")
+    improvement_plan = report.get("improvement_plan", "No improvement plan provided.")
     question_wise = report.get("question_wise", [])
 
+    # ---------------- CREATE PDF BUFFER ----------------
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+
+    width, height = letter
+    y = height - 60
+
+    # ---------------- HELPER FUNCTION ----------------
+    def add_text_block(title, text, y_pos, font_size=11, max_width=85):
+        """
+        Adds wrapped text block safely to PDF.
+        Returns updated y position.
+        """
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y_pos, title)
+        y_pos -= 20
+
+        c.setFont("Helvetica", font_size)
+        lines = simpleSplit(str(text), "Helvetica", font_size, max_width * 6)
+
+        for line in lines:
+            if y_pos < 60:
+                c.showPage()
+                y_pos = height - 60
+                c.setFont("Helvetica", font_size)
+
+            c.drawString(60, y_pos, line)
+            y_pos -= 15
+
+        return y_pos - 10
+
     # ---------------- HEADER ----------------
-    c.setFillColor(colors.darkblue)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(50, height - 50, "AI Interview Report (MAANG Style)")
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(50, y, "AI Interview Report")
+    y -= 40
 
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica", 10)
-    c.drawString(50, height - 70, f"Generated On: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    c.line(50, height - 80, width - 50, height - 80)
-
-    y = height - 110
-
-    # ---------------- SETTINGS ----------------
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Interview Settings")
+    c.setFont("Helvetica", 12)
+    c.drawString(50, y, f"Candidate Name: {candidate_name}")
     y -= 20
+    c.drawString(50, y, f"Role: {role}")
+    y -= 20
+    c.drawString(50, y, f"Difficulty: {difficulty}")
+    y -= 20
+    c.drawString(50, y, f"Interview Type: {interview_type}")
+    y -= 20
+    c.drawString(50, y, f"Generated At: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    y -= 35
 
-    c.setFont("Helvetica", 11)
-    c.drawString(60, y, f"Role: {role}")
-    y -= 15
-    c.drawString(60, y, f"Difficulty: {difficulty}")
-    y -= 15
-    c.drawString(60, y, f"Interview Type: {interview_type}")
-    y -= 15
-    c.drawString(60, y, f"Total Questions: {total_questions}")
+    # ---------------- SCORE SECTION ----------------
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, f"Overall Score: {overall_score}/10")
     y -= 25
+    c.drawString(50, y, f"Verdict: {verdict}")
+    y -= 40
 
     # ---------------- SUMMARY ----------------
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Final Result")
-    y -= 20
-
-    c.setFont("Helvetica", 11)
-    c.drawString(60, y, f"Overall Score: {overall_score} / 10")
-    y -= 15
-
-    # Verdict color
-    if "Strong" in verdict:
-        c.setFillColor(colors.green)
-    elif "Hire" in verdict:
-        c.setFillColor(colors.darkgreen)
-    elif "Maybe" in verdict:
-        c.setFillColor(colors.orange)
-    else:
-        c.setFillColor(colors.red)
-
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(60, y, f"Verdict: {verdict}")
-
-    c.setFillColor(colors.black)
-    y -= 30
-
-    # ---------------- SUMMARY FEEDBACK ----------------
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Summary Feedback")
-    y -= 20
-
-    c.setFont("Helvetica", 10)
-    for line in wrap_text(summary_feedback, 95):
-        c.drawString(60, y, line)
-        y -= 12
-        if y < 80:
-            c.showPage()
-            y = height - 60
-
-    y -= 15
+    y = add_text_block("Summary Feedback:", summary_feedback, y)
 
     # ---------------- IMPROVEMENT PLAN ----------------
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Improvement Plan")
-    y -= 20
+    y = add_text_block("Improvement Plan:", improvement_plan, y)
 
-    c.setFont("Helvetica", 10)
-    for line in wrap_text(improvement_plan, 95):
-        c.drawString(60, y, line)
-        y -= 12
-        if y < 80:
-            c.showPage()
-            y = height - 60
-
-    y -= 20
-
-    # ---------------- QUESTION WISE EVALUATION ----------------
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Question Wise Evaluation")
+    # ---------------- QUESTION WISE ----------------
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "Question-wise Evaluation")
     y -= 25
 
-    for i, item in enumerate(question_wise, start=1):
+    if isinstance(question_wise, list) and len(question_wise) > 0:
 
-        if y < 200:
-            c.showPage()
-            y = height - 60
+        for i, item in enumerate(question_wise, start=1):
 
-        question = item.get("question", "")
-        candidate_answer = item.get("candidate_answer", "")
-        score = item.get("score", 0)
-        feedback = item.get("feedback", "")
-        improvement = item.get("improvement", "")
-        ideal_answer = item.get("ideal_answer", "")
+            if not isinstance(item, dict):
+                continue
 
-        c.setFillColor(colors.darkblue)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(50, y, f"Q{i}: {question[:80]}")
-        c.setFillColor(colors.black)
-        y -= 18
+            question = item.get("question", "N/A")
+            answer = item.get("answer", "N/A")
+            score = item.get("score", "N/A")
+            feedback = item.get("feedback", "N/A")
 
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y, f"Score: {score} / 10")
-        y -= 15
-
-        # Candidate Answer
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y, "Candidate Answer:")
-        y -= 12
-
-        c.setFont("Helvetica", 9)
-        for line in wrap_text(candidate_answer, 95):
-            c.drawString(70, y, line)
-            y -= 11
-            if y < 80:
+            # Page break
+            if y < 140:
                 c.showPage()
                 y = height - 60
 
-        y -= 10
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, y, f"Q{i}: {question[:80]}")
+            y -= 18
 
-        # Feedback
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y, "Feedback:")
-        y -= 12
+            c.setFont("Helvetica", 11)
+            c.drawString(60, y, f"Score: {score}/10")
+            y -= 16
 
-        c.setFont("Helvetica", 9)
-        for line in wrap_text(feedback, 95):
-            c.drawString(70, y, line)
-            y -= 11
-            if y < 80:
-                c.showPage()
-                y = height - 60
+            y = add_text_block("Feedback:", feedback, y, font_size=10)
+            y = add_text_block("Candidate Answer:", answer, y, font_size=10)
 
-        y -= 10
+            y -= 10
+            c.line(50, y, width - 50, y)
+            y -= 20
 
-        # Improvement
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y, "Improvement:")
-        y -= 12
+    else:
+        c.setFont("Helvetica", 11)
+        c.drawString(50, y, "No question-wise evaluation available.")
+        y -= 20
 
-        c.setFont("Helvetica", 9)
-        for line in wrap_text(improvement, 95):
-            c.drawString(70, y, line)
-            y -= 11
-            if y < 80:
-                c.showPage()
-                y = height - 60
+    # ---------------- FOOTER ----------------
+    if y < 80:
+        c.showPage()
 
-        y -= 10
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(50, 40, "Generated by AI Interview Bot (MAANG Style)")
 
-        # Ideal Answer
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y, "Ideal Answer (MAANG Standard):")
-        y -= 12
-
-        c.setFont("Helvetica", 9)
-        for line in wrap_text(ideal_answer, 95):
-            c.drawString(70, y, line)
-            y -= 11
-            if y < 80:
-                c.showPage()
-                y = height - 60
-
-        y -= 25
-
+    # ---------------- SAVE PDF ----------------
     c.save()
     buffer.seek(0)
-    return buffer
+
+    return buffer.getvalue()

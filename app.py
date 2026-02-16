@@ -21,7 +21,6 @@ from hr_dashboard import hr_dashboard
 st.set_page_config(page_title="AI Interview Bot", layout="wide")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
 init_db()
 
 
@@ -94,6 +93,23 @@ def fullscreen_prompt():
     """, height=220)
 
 
+# ---------------- SAFE JSON ----------------
+def safe_json(report):
+    if report is None:
+        return {}
+
+    if isinstance(report, str):
+        try:
+            report = json.loads(report)
+        except:
+            return {}
+
+    if not isinstance(report, dict):
+        return {}
+
+    return report
+
+
 # ---------------- SESSION INIT ----------------
 def init_session():
     defaults = {
@@ -120,7 +136,10 @@ def init_session():
         "interview_started": False,
         "question_count": 0,
         "interview_ended": False,
-        "final_report": None
+        "final_report": None,
+
+        # FIX: This will store current answer
+        "current_answer": ""
     }
 
     for k, v in defaults.items():
@@ -140,6 +159,7 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
+    st.session_state.current_answer = ""
 
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -153,7 +173,7 @@ def transcribe_audio(audio_path):
 
 
 # ==========================================================
-# 🌟 LANDING PAGE (Gemini Style)
+# 🌟 LANDING PAGE
 # ==========================================================
 if st.session_state.page == "Landing":
 
@@ -169,7 +189,7 @@ if st.session_state.page == "Landing":
         st.markdown("""
         <div class="gemini-card">
             <h2>👨‍💼 Admin Login</h2>
-            <p>Manage questions, view candidates, analytics, and download interview reports.</p>
+            <p>Manage candidates, analytics, and download interview reports.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -181,7 +201,7 @@ if st.session_state.page == "Landing":
         st.markdown("""
         <div class="gemini-card">
             <h2>👨‍🎓 Candidate Login</h2>
-            <p>Upload resume, attend interview in fullscreen mode and get AI evaluation report.</p>
+            <p>Upload resume, attend interview and get AI evaluation report.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -291,7 +311,7 @@ if st.session_state.page == "CANDIDATE_LOGIN":
 
 
 # ==========================================================
-# ⚙️ CANDIDATE INTERVIEW SETUP
+# ⚙️ INTERVIEW SETUP
 # ==========================================================
 if st.session_state.page == "CANDIDATE_SETUP":
 
@@ -338,7 +358,7 @@ if st.session_state.page == "CANDIDATE_SETUP":
 
 
 # ==========================================================
-# 🧠 INTERVIEW SCREEN
+# 🧠 INTERVIEW PAGE
 # ==========================================================
 if st.session_state.page == "INTERVIEW":
 
@@ -371,53 +391,58 @@ if st.session_state.page == "INTERVIEW":
 
     st.markdown("---")
 
-
     # ---------------- TEXT MODE ----------------
     if mode == "Text Mode":
 
-        answer_key = f"text_answer_{st.session_state.question_count}"
-        user_answer = st.text_area("✍️ Type your answer:", key=answer_key, height=200)
+        st.session_state.current_answer = st.text_area(
+            "✍️ Type your answer:",
+            value=st.session_state.current_answer,
+            height=200
+        )
 
         colA, colB = st.columns(2)
 
         with colA:
             if st.button("✅ Submit Answer & Next", use_container_width=True):
 
-                if user_answer.strip():
+                if not st.session_state.current_answer.strip():
+                    st.warning("⚠️ Please type an answer first!")
+                    st.stop()
 
-                    st.session_state.qa_list.append({
-                        "question": st.session_state.last_question,
-                        "answer": user_answer
-                    })
+                user_answer = st.session_state.current_answer.strip()
 
-                    st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
+                st.session_state.qa_list.append({
+                    "question": st.session_state.last_question,
+                    "answer": user_answer
+                })
 
-                    if st.session_state.question_count >= TOTAL_QUESTIONS:
-                        st.session_state.interview_ended = True
-                        st.session_state.page = "FINAL_REPORT"
-                        st.rerun()
+                st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
 
-                    q = generate_question(
-                        st.session_state.resume_text,
-                        st.session_state.previous_answers,
-                        st.session_state.role,
-                        st.session_state.difficulty,
-                        st.session_state.interview_type
-                    )
+                # CLEAR ANSWER FOR NEXT QUESTION
+                st.session_state.current_answer = ""
 
-                    st.session_state.last_question = q
-                    st.session_state.question_count += 1
+                if st.session_state.question_count >= TOTAL_QUESTIONS:
+                    st.session_state.interview_ended = True
+                    st.session_state.page = "FINAL_REPORT"
                     st.rerun()
 
-                else:
-                    st.warning("⚠️ Please type an answer first!")
+                q = generate_question(
+                    st.session_state.resume_text,
+                    st.session_state.previous_answers,
+                    st.session_state.role,
+                    st.session_state.difficulty,
+                    st.session_state.interview_type
+                )
+
+                st.session_state.last_question = q
+                st.session_state.question_count += 1
+                st.rerun()
 
         with colB:
             if st.button("🛑 End Interview", use_container_width=True):
                 st.session_state.interview_ended = True
                 st.session_state.page = "FINAL_REPORT"
                 st.rerun()
-
 
     # ---------------- VOICE MODE ----------------
     if mode == "Voice Mode":
@@ -447,38 +472,37 @@ if st.session_state.page == "INTERVIEW":
             with colA:
                 if st.button("🚀 Submit Voice Answer", use_container_width=True):
 
-                    if user_answer_voice.strip():
+                    if not user_answer_voice.strip():
+                        st.warning("⚠️ Voice answer empty. Try again!")
+                        st.stop()
 
-                        st.session_state.qa_list.append({
-                            "question": st.session_state.last_question,
-                            "answer": user_answer_voice
-                        })
+                    st.session_state.qa_list.append({
+                        "question": st.session_state.last_question,
+                        "answer": user_answer_voice
+                    })
 
-                        st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
+                    st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
 
-                        if st.session_state.question_count >= TOTAL_QUESTIONS:
-                            st.session_state.interview_ended = True
-                            st.session_state.page = "FINAL_REPORT"
-                            st.rerun()
-
-                        q = generate_question(
-                            st.session_state.resume_text,
-                            st.session_state.previous_answers,
-                            st.session_state.role,
-                            st.session_state.difficulty,
-                            st.session_state.interview_type
-                        )
-
-                        st.session_state.last_question = q
-                        st.session_state.question_count += 1
-
-                        voice_file = text_to_speech(q)
-                        st.audio(voice_file, format="audio/mp3")
-
+                    if st.session_state.question_count >= TOTAL_QUESTIONS:
+                        st.session_state.interview_ended = True
+                        st.session_state.page = "FINAL_REPORT"
                         st.rerun()
 
-                    else:
-                        st.warning("⚠️ Voice answer empty. Try again!")
+                    q = generate_question(
+                        st.session_state.resume_text,
+                        st.session_state.previous_answers,
+                        st.session_state.role,
+                        st.session_state.difficulty,
+                        st.session_state.interview_type
+                    )
+
+                    st.session_state.last_question = q
+                    st.session_state.question_count += 1
+
+                    voice_file = text_to_speech(q)
+                    st.audio(voice_file, format="audio/mp3")
+
+                    st.rerun()
 
             with colB:
                 if st.button("🛑 End Interview", use_container_width=True):
@@ -508,18 +532,7 @@ if st.session_state.page == "FINAL_REPORT":
             interview_type=st.session_state.interview_type
         )
 
-        if report is None:
-            report = {}
-
-        if isinstance(report, str):
-            try:
-                report = json.loads(report)
-            except:
-                report = {}
-
-        if not isinstance(report, dict):
-            report = {}
-
+        report = safe_json(report)
         st.session_state.final_report = report
 
         save_report(
@@ -533,7 +546,7 @@ if st.session_state.page == "FINAL_REPORT":
 
         st.rerun()
 
-    report = st.session_state.final_report
+    report = safe_json(st.session_state.final_report)
 
     st.markdown("<h1 class='main-title'>📊 Final Interview Report</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>AI generated MAANG-style evaluation</p>", unsafe_allow_html=True)
@@ -569,7 +582,7 @@ if st.session_state.page == "FINAL_REPORT":
     st.divider()
     st.subheader("📄 Download PDF Report")
 
-    pdf_file = generate_pdf_report(
+    pdf_bytes = generate_pdf_report(
         st.session_state.candidate_name,
         st.session_state.role,
         st.session_state.difficulty,
@@ -579,9 +592,10 @@ if st.session_state.page == "FINAL_REPORT":
 
     st.download_button(
         label="📄 Download PDF Report",
-        data=pdf_file,
+        data=pdf_bytes,
         file_name=f"{st.session_state.candidate_name}_AI_Interview_Report.pdf",
-        mime="application/pdf"
+        mime="application/pdf",
+        use_container_width=True
     )
 
     st.divider()
