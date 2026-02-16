@@ -18,6 +18,9 @@ def hr_dashboard():
         "id", "candidate_name", "role", "difficulty", "interview_type",
         "mode", "verdict", "overall_score", "plagiarism_percentage", "timestamp"
     ])
+    df["overall_score"] = pd.to_numeric(df["overall_score"], errors="coerce").fillna(0)
+    df["plagiarism_percentage"] = pd.to_numeric(df["plagiarism_percentage"], errors="coerce").fillna(0)
+
 
     # ---------------- FILTERS ----------------
     st.subheader("🔍 Search / Filter Reports")
