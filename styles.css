@@ -1,3 +1,6 @@
+/* ============================
+   GLOBAL BODY THEME
+============================ */
 body {
     background: radial-gradient(circle at top left, #0ea5e9, transparent 50%),
                 radial-gradient(circle at bottom right, #a855f7, transparent 50%),
@@ -7,6 +10,19 @@ body {
     color: white;
 }
 
+/* Fix Streamlit main background */
+.stApp {
+    background: radial-gradient(circle at top left, #0ea5e9, transparent 50%),
+                radial-gradient(circle at bottom right, #a855f7, transparent 50%),
+                radial-gradient(circle at center, #22c55e, transparent 60%),
+                #0b1220 !important;
+    font-family: 'Segoe UI', sans-serif;
+    color: white;
+}
+
+/* ============================
+   TITLES
+============================ */
 .main-title {
     font-size: 50px;
     font-weight: 900;
@@ -25,6 +41,19 @@ body {
     margin-bottom: 25px;
 }
 
+.glow-line {
+    height: 3px;
+    width: 180px;
+    margin: auto;
+    margin-top: 10px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e);
+    box-shadow: 0px 0px 20px rgba(56, 189, 248, 0.6);
+}
+
+/* ============================
+   CARDS
+============================ */
 .card-container {
     display: flex;
     justify-content: center;
@@ -66,37 +95,140 @@ body {
     line-height: 1.5;
 }
 
-.gemini-btn {
-    margin-top: 18px;
-    width: 100%;
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 800;
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(90deg, #2563eb, #9333ea);
-    color: white;
-    cursor: pointer;
-    transition: 0.3s ease;
-}
-
-.gemini-btn:hover {
-    box-shadow: 0px 0px 25px rgba(56, 189, 248, 0.6);
-    transform: scale(1.03);
-}
-
 @keyframes floatCard {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-7px); }
     100% { transform: translateY(0px); }
 }
 
-.glow-line {
-    height: 3px;
-    width: 180px;
-    margin: auto;
+/* ============================
+   BUTTONS (STREAMLIT)
+============================ */
+.stButton button {
     margin-top: 10px;
-    border-radius: 10px;
-    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e);
-    box-shadow: 0px 0px 20px rgba(56, 189, 248, 0.6);
+    width: 100%;
+    padding: 12px !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    border-radius: 14px !important;
+    border: none !important;
+    background: linear-gradient(90deg, #2563eb, #9333ea) !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: 0.3s ease !important;
+}
+
+.stButton button:hover {
+    box-shadow: 0px 0px 25px rgba(56, 189, 248, 0.6) !important;
+    transform: scale(1.03) !important;
+}
+
+/* Download button */
+.stDownloadButton button {
+    background: linear-gradient(90deg, #22c55e, #0ea5e9) !important;
+    border-radius: 14px !important;
+    font-weight: 900 !important;
+}
+
+.stDownloadButton button:hover {
+    box-shadow: 0px 0px 25px rgba(34, 197, 94, 0.7) !important;
+}
+
+/* ============================
+   QUESTION CARD UI (NEW)
+============================ */
+.question-card {
+    background: rgba(255, 255, 255, 0.06);
+    padding: 28px;
+    border-radius: 22px;
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0px 0px 40px rgba(168, 85, 247, 0.25);
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    line-height: 1.7;
+    transition: 0.3s ease-in-out;
+}
+
+.question-card:hover {
+    transform: scale(1.01);
+    box-shadow: 0px 0px 60px rgba(56, 189, 248, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.question-label {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #38bdf8;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+/* ============================
+   TEXT AREA / INPUTS
+============================ */
+textarea {
+    border-radius: 16px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+}
+
+textarea:focus {
+    border: 1px solid rgba(56, 189, 248, 0.8) !important;
+    box-shadow: 0px 0px 20px rgba(56, 189, 248, 0.35) !important;
+}
+
+/* Input fields */
+input {
+    border-radius: 12px !important;
+    padding: 10px !important;
+    font-weight: 600 !important;
+}
+
+/* ============================
+   DATAFRAME STYLING
+============================ */
+[data-testid="stDataFrame"] {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 16px !important;
+    padding: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0px 0px 25px rgba(56, 189, 248, 0.15);
+}
+
+/* ============================
+   PROGRESS BAR
+============================ */
+.stProgress > div > div {
+    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e) !important;
+    border-radius: 10px !important;
+}
+
+/* ============================
+   HR DASHBOARD METRICS
+============================ */
+[data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0px 0px 20px rgba(168, 85, 247, 0.12);
+}
+
+/* ============================
+   REMOVE STREAMLIT FOOTER
+============================ */
+footer {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
 }
