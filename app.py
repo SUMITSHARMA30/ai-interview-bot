@@ -136,10 +136,7 @@ def init_session():
         "interview_started": False,
         "question_count": 0,
         "interview_ended": False,
-        "final_report": None,
-
-        # FIX: This will store current answer
-        "current_answer": ""
+        "final_report": None
     }
 
     for k, v in defaults.items():
@@ -159,7 +156,11 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
-    st.session_state.current_answer = ""
+
+    # Clear all previous answer keys
+    for key in list(st.session_state.keys()):
+        if key.startswith("answer_"):
+            del st.session_state[key]
 
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -394,9 +395,11 @@ if st.session_state.page == "INTERVIEW":
     # ---------------- TEXT MODE ----------------
     if mode == "Text Mode":
 
-        st.session_state.current_answer = st.text_area(
+        answer_key = f"answer_{st.session_state.question_count}"
+
+        user_answer = st.text_area(
             "✍️ Type your answer:",
-            value=st.session_state.current_answer,
+            key=answer_key,
             height=200
         )
 
@@ -405,21 +408,19 @@ if st.session_state.page == "INTERVIEW":
         with colA:
             if st.button("✅ Submit Answer & Next", use_container_width=True):
 
-                if not st.session_state.current_answer.strip():
+                if not user_answer.strip():
                     st.warning("⚠️ Please type an answer first!")
                     st.stop()
 
-                user_answer = st.session_state.current_answer.strip()
-
                 st.session_state.qa_list.append({
                     "question": st.session_state.last_question,
-                    "answer": user_answer
+                    "answer": user_answer.strip()
                 })
 
-                st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer}\n"
+                st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer.strip()}\n"
 
-                # CLEAR ANSWER FOR NEXT QUESTION
-                st.session_state.current_answer = ""
+                # CLEAR CURRENT ANSWER FIELD
+                st.session_state[answer_key] = ""
 
                 if st.session_state.question_count >= TOTAL_QUESTIONS:
                     st.session_state.interview_ended = True
@@ -478,10 +479,10 @@ if st.session_state.page == "INTERVIEW":
 
                     st.session_state.qa_list.append({
                         "question": st.session_state.last_question,
-                        "answer": user_answer_voice
+                        "answer": user_answer_voice.strip()
                     })
 
-                    st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice}\n"
+                    st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer_voice.strip()}\n"
 
                     if st.session_state.question_count >= TOTAL_QUESTIONS:
                         st.session_state.interview_ended = True
