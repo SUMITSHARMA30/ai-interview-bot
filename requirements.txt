@@ -1,9 +1,10 @@
+plotly
+matplotlib
+pandas
 streamlit
 groq
-pandas
 reportlab
 python-docx
 PyPDF2
 streamlit-mic-recorder
 gTTS
-matplotlib
