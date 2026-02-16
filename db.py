@@ -11,32 +11,50 @@ def get_connection():
 
 def init_db():
     conn = get_connection()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS reports (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        candidate_name TEXT,
-        role TEXT,
-        difficulty TEXT,
-        interview_type TEXT,
-        mode TEXT,
-        report_json TEXT,
-        created_at TEXT
-    )
+    # Reports table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            candidate_name TEXT,
+            role TEXT,
+            difficulty TEXT,
+            interview_type TEXT,
+            mode TEXT,
+            report_json TEXT,
+            timestamp TEXT
+        )
+    """)
+
+    # Admin Settings table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role TEXT,
+            difficulty TEXT,
+            interview_type TEXT,
+            total_questions INTEGER,
+            mode TEXT,
+            updated_at TEXT
+        )
     """)
 
     conn.commit()
     conn.close()
 
+    # Insert default settings if none exist
+    if get_admin_settings() is None:
+        save_admin_settings("SDE", "Easy", "Technical", 5, "Text Mode")
+
 
 def save_report(candidate_name, role, difficulty, interview_type, mode, report_json):
     conn = get_connection()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    cur.execute("""
-    INSERT INTO reports (candidate_name, role, difficulty, interview_type, mode, report_json, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    cursor.execute("""
+        INSERT INTO reports (candidate_name, role, difficulty, interview_type, mode, report_json, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         candidate_name,
         role,
@@ -51,23 +69,58 @@ def save_report(candidate_name, role, difficulty, interview_type, mode, report_j
     conn.close()
 
 
-def fetch_all_reports():
+def fetch_reports():
     conn = get_connection()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    cur.execute("SELECT * FROM reports ORDER BY id DESC")
-    rows = cur.fetchall()
+    cursor.execute("SELECT * FROM reports ORDER BY id DESC")
+    rows = cursor.fetchall()
 
     conn.close()
     return rows
 
 
-def fetch_report_by_id(report_id):
+# ---------------- ADMIN SETTINGS ----------------
+def save_admin_settings(role, difficulty, interview_type, total_questions, mode):
     conn = get_connection()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    cur.execute("SELECT * FROM reports WHERE id = ?", (report_id,))
-    row = cur.fetchone()
+    cursor.execute("""
+        INSERT INTO admin_settings (role, difficulty, interview_type, total_questions, mode, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        role,
+        difficulty,
+        interview_type,
+        total_questions,
+        mode,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
 
+    conn.commit()
     conn.close()
-    return row
+
+
+def get_admin_settings():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT role, difficulty, interview_type, total_questions, mode
+        FROM admin_settings
+        ORDER BY id DESC LIMIT 1
+    """)
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        return None
+
+    return {
+        "role": row[0],
+        "difficulty": row[1],
+        "interview_type": row[2],
+        "total_questions": row[3],
+        "mode": row[4]
+    }

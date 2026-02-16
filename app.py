@@ -13,7 +13,7 @@ from tts_engine import text_to_speech
 from groq import Groq
 
 from pdf_report import generate_pdf_report
-from db import init_db, save_report
+from db import init_db, save_report, get_admin_settings
 from hr_dashboard import hr_dashboard
 
 
@@ -123,12 +123,6 @@ def init_session():
 
         "resume_text": "",
 
-        "role": "SDE",
-        "difficulty": "Easy",
-        "interview_type": "Technical",
-        "mode": "Text Mode",
-        "total_questions": 5,
-
         "qa_list": [],
         "previous_answers": "",
         "last_question": "",
@@ -136,7 +130,9 @@ def init_session():
         "interview_started": False,
         "question_count": 0,
         "interview_ended": False,
-        "final_report": None
+        "final_report": None,
+
+        "fullscreen_shown": False
     }
 
     for k, v in defaults.items():
@@ -156,8 +152,8 @@ def reset_interview():
     st.session_state.question_count = 0
     st.session_state.interview_ended = False
     st.session_state.final_report = None
+    st.session_state.fullscreen_shown = False
 
-    # Clear all previous answer keys
     for key in list(st.session_state.keys()):
         if key.startswith("answer_"):
             del st.session_state[key]
@@ -190,7 +186,7 @@ if st.session_state.page == "Landing":
         st.markdown("""
         <div class="gemini-card">
             <h2>👨‍💼 Admin Login</h2>
-            <p>Manage candidates, analytics, and download interview reports.</p>
+            <p>Manage candidates, analytics, and interview settings.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -202,7 +198,7 @@ if st.session_state.page == "Landing":
         st.markdown("""
         <div class="gemini-card">
             <h2>👨‍🎓 Candidate Login</h2>
-            <p>Upload resume, attend interview and get AI evaluation report.</p>
+            <p>Upload resume, attend interview, and download AI evaluation report.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -221,7 +217,6 @@ if st.session_state.page == "HR_LOGIN":
     hide_sidebar()
 
     st.markdown("<h1 class='main-title'>🔐 HR Login</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Only Admin/HR can access this portal.</p>", unsafe_allow_html=True)
 
     password = st.text_input("Enter Admin Password", type="password")
 
@@ -271,8 +266,7 @@ if st.session_state.page == "CANDIDATE_LOGIN":
 
     hide_sidebar()
 
-    st.markdown("<h1 class='main-title'>👨‍🎓 Candidate Login</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Enter your details to start the interview.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>👨‍🎓 Candidate Portal</h1>", unsafe_allow_html=True)
 
     st.session_state.candidate_name = st.text_input("Full Name", value=st.session_state.candidate_name)
     st.session_state.candidate_email = st.text_input("Email", value=st.session_state.candidate_email)
@@ -290,7 +284,7 @@ if st.session_state.page == "CANDIDATE_LOGIN":
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("🚀 Proceed to Interview Setup", use_container_width=True):
+        if st.button("🚀 Start Interview", use_container_width=True):
 
             if not st.session_state.candidate_name.strip():
                 st.warning("⚠️ Please enter your name.")
@@ -300,41 +294,19 @@ if st.session_state.page == "CANDIDATE_LOGIN":
                 st.warning("⚠️ Please upload resume first.")
                 st.stop()
 
-            st.session_state.page = "CANDIDATE_SETUP"
-            st.rerun()
-
-    with col2:
-        if st.button("⬅️ Back", use_container_width=True):
-            st.session_state.page = "Landing"
-            st.rerun()
-
-    st.stop()
-
-
-# ==========================================================
-# ⚙️ INTERVIEW SETUP
-# ==========================================================
-if st.session_state.page == "CANDIDATE_SETUP":
-
-    hide_sidebar()
-
-    st.markdown("<h1 class='main-title'>⚙️ Interview Setup</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Select role, difficulty, interview type, and mode.</p>", unsafe_allow_html=True)
-
-    st.session_state.role = st.selectbox("Select Role", ["SDE", "Data Scientist", "ML Engineer"])
-    st.session_state.difficulty = st.selectbox("Select Difficulty", ["Easy", "Medium", "Hard"])
-    st.session_state.interview_type = st.selectbox("Interview Type", ["Technical", "HR", "Mixed"])
-    st.session_state.total_questions = st.slider("Number of Questions", 5, 20, 5)
-    st.session_state.mode = st.radio("Interview Mode", ["Text Mode", "Voice Mode"])
-
-    st.divider()
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("🚀 Start Interview", use_container_width=True):
-
             reset_interview()
+
+            settings = get_admin_settings()
+
+            if settings is None:
+                st.error("❌ Admin has not set interview settings yet!")
+                st.stop()
+
+            st.session_state.role = settings["role"]
+            st.session_state.difficulty = settings["difficulty"]
+            st.session_state.interview_type = settings["interview_type"]
+            st.session_state.total_questions = settings["total_questions"]
+            st.session_state.mode = settings["mode"]
 
             q = generate_question(
                 st.session_state.resume_text,
@@ -352,7 +324,7 @@ if st.session_state.page == "CANDIDATE_SETUP":
 
     with col2:
         if st.button("⬅️ Back", use_container_width=True):
-            st.session_state.page = "CANDIDATE_LOGIN"
+            st.session_state.page = "Landing"
             st.rerun()
 
     st.stop()
@@ -365,8 +337,9 @@ if st.session_state.page == "INTERVIEW":
 
     hide_sidebar()
 
-    if st.session_state.interview_started and not st.session_state.interview_ended:
+    if not st.session_state.fullscreen_shown:
         fullscreen_prompt()
+        st.session_state.fullscreen_shown = True
 
     TOTAL_QUESTIONS = st.session_state.total_questions
     mode = st.session_state.mode
@@ -374,6 +347,7 @@ if st.session_state.page == "INTERVIEW":
     st.progress(st.session_state.question_count / TOTAL_QUESTIONS)
 
     st.markdown(f"### 🧠 Question {st.session_state.question_count} / {TOTAL_QUESTIONS}")
+    st.markdown(f"🎯 Role: **{st.session_state.role}** | ⚡ Difficulty: **{st.session_state.difficulty}**")
     st.markdown("---")
 
     st.markdown(f"""
@@ -397,53 +371,56 @@ if st.session_state.page == "INTERVIEW":
 
         answer_key = f"answer_{st.session_state.question_count}"
 
-        user_answer = st.text_area(
-            "✍️ Type your answer:",
-            key=answer_key,
-            height=200
-        )
+        with st.form(key=f"form_{st.session_state.question_count}"):
 
-        colA, colB = st.columns(2)
+            user_answer = st.text_area(
+                "✍️ Type your answer:",
+                key=answer_key,
+                height=200
+            )
 
-        with colA:
-            if st.button("✅ Submit Answer & Next", use_container_width=True):
+            colA, colB = st.columns(2)
 
-                if not user_answer.strip():
-                    st.warning("⚠️ Please type an answer first!")
-                    st.stop()
+            with colA:
+                submit_next = st.form_submit_button("✅ Submit Answer & Next", use_container_width=True)
 
-                st.session_state.qa_list.append({
-                    "question": st.session_state.last_question,
-                    "answer": user_answer.strip()
-                })
+            with colB:
+                end_interview = st.form_submit_button("🛑 End Interview", use_container_width=True)
 
-                st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer.strip()}\n"
+        if submit_next:
 
-                # CLEAR CURRENT ANSWER FIELD
-                st.session_state[answer_key] = ""
+            if not user_answer.strip():
+                st.warning("⚠️ Please type an answer first!")
+                st.stop()
 
-                if st.session_state.question_count >= TOTAL_QUESTIONS:
-                    st.session_state.interview_ended = True
-                    st.session_state.page = "FINAL_REPORT"
-                    st.rerun()
+            st.session_state.qa_list.append({
+                "question": st.session_state.last_question,
+                "answer": user_answer.strip()
+            })
 
-                q = generate_question(
-                    st.session_state.resume_text,
-                    st.session_state.previous_answers,
-                    st.session_state.role,
-                    st.session_state.difficulty,
-                    st.session_state.interview_type
-                )
+            st.session_state.previous_answers += f"\nQ: {st.session_state.last_question}\nA: {user_answer.strip()}\n"
 
-                st.session_state.last_question = q
-                st.session_state.question_count += 1
-                st.rerun()
-
-        with colB:
-            if st.button("🛑 End Interview", use_container_width=True):
+            if st.session_state.question_count >= TOTAL_QUESTIONS:
                 st.session_state.interview_ended = True
                 st.session_state.page = "FINAL_REPORT"
                 st.rerun()
+
+            q = generate_question(
+                st.session_state.resume_text,
+                st.session_state.previous_answers,
+                st.session_state.role,
+                st.session_state.difficulty,
+                st.session_state.interview_type
+            )
+
+            st.session_state.last_question = q
+            st.session_state.question_count += 1
+            st.rerun()
+
+        if end_interview:
+            st.session_state.interview_ended = True
+            st.session_state.page = "FINAL_REPORT"
+            st.rerun()
 
     # ---------------- VOICE MODE ----------------
     if mode == "Voice Mode":
@@ -550,7 +527,6 @@ if st.session_state.page == "FINAL_REPORT":
     report = safe_json(st.session_state.final_report)
 
     st.markdown("<h1 class='main-title'>📊 Final Interview Report</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>AI generated MAANG-style evaluation</p>", unsafe_allow_html=True)
 
     st.write(f"👤 Candidate: **{st.session_state.candidate_name}**")
     st.write(f"📧 Email: **{st.session_state.candidate_email}**")
