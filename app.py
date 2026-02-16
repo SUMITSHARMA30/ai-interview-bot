@@ -346,28 +346,15 @@ if st.session_state.page == "INTERVIEW":
 
     st.progress(st.session_state.question_count / TOTAL_QUESTIONS)
 
- st.markdown(f"""
-<div class="question-card">
-    <div class="q-badge">Q{st.session_state.question_count}</div>
-    {st.session_state.last_question}
-</div>
-""", unsafe_allow_html=True)
-
-
-
-    st.markdown(f"""
-    <div style="
-        background:#ffffff;
-        padding:22px;
-        border-radius:18px;
-        box-shadow:0px 10px 30px rgba(0,0,0,0.10);
-        font-size:20px;
-        font-weight:800;
-        color:#0f172a;
-    ">
-         {st.session_state.last_question}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="question-card">
+            <div class="q-badge">Q{st.session_state.question_count}</div>
+            {st.session_state.last_question}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
 
@@ -546,6 +533,9 @@ if st.session_state.page == "FINAL_REPORT":
     st.success(f"🏆 Verdict: **{verdict}**")
     st.metric("Overall Score", f"{overall_score}/10")
 
+    plagiarism_percent = report.get("plagiarism_percentage", 0)
+    st.metric("Plagiarism %", f"{plagiarism_percent}%")
+
     st.divider()
     st.subheader("🧠 Summary Feedback")
     st.write(report.get("summary_feedback", "No feedback generated."))
@@ -594,4 +584,3 @@ if st.session_state.page == "FINAL_REPORT":
         if st.button("🏠 Go to Home", use_container_width=True):
             st.session_state.page = "Landing"
             st.rerun()
-s
