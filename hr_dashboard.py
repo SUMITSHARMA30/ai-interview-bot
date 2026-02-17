@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import json
 
 from db import fetch_all_reports, fetch_report_by_id, delete_report
 from pdf_report import generate_pdf_report
@@ -8,15 +9,10 @@ from pdf_report import generate_pdf_report
 
 def hr_dashboard():
     st.markdown("<h1 class='main-title'>📊 HR Dashboard</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Analytics + Candidate Reports</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Analytics + Candidate Reports (MAANG Style)</p>", unsafe_allow_html=True)
     st.divider()
 
-    try:
-        reports = fetch_all_reports()
-    except Exception as e:
-        st.error("❌ Database error while loading reports.")
-        st.code(str(e))
-        return
+    reports = fetch_all_reports()
 
     if not reports or len(reports) == 0:
         st.warning("⚠️ No interview reports found yet.")
@@ -67,6 +63,8 @@ def hr_dashboard():
     st.subheader("📋 Candidate Reports Table")
     st.dataframe(filtered_df, use_container_width=True)
 
+    st.divider()
+
     # ---------------- EXPORT CSV ----------------
     st.subheader("📤 Export Filtered Reports")
 
@@ -91,7 +89,6 @@ def hr_dashboard():
         st.markdown("### Verdict Distribution")
         verdict_counts = filtered_df["verdict"].value_counts().reset_index()
         verdict_counts.columns = ["verdict", "count"]
-
         fig = px.pie(verdict_counts, names="verdict", values="count", hole=0.4)
         st.plotly_chart(fig, use_container_width=True)
 
@@ -116,70 +113,157 @@ def hr_dashboard():
 
     st.divider()
 
-    # ---------------- VIEW REPORT ----------------
+    # ---------------- REPORT VIEWER ----------------
     st.subheader("📌 View Candidate Full Report")
 
     report_id = st.selectbox("Select Candidate Report ID", filtered_df["id"].tolist())
 
-    if report_id:
-        report_data = fetch_report_by_id(report_id)
+    if not report_id:
+        return
 
-        if report_data is None:
-            st.error("❌ Report not found.")
-            return
+    report_data = fetch_report_by_id(report_id)
 
-        st.markdown("### 👤 Candidate Details")
-        st.write(f"**Name:** {report_data['candidate_name']}")
-        st.write(f"**Role:** {report_data['role']}")
-        st.write(f"**Difficulty:** {report_data['difficulty']}")
-        st.write(f"**Interview Type:** {report_data['interview_type']}")
-        st.write(f"**Mode:** {report_data['mode']}")
-        st.write(f"**Timestamp:** {report_data['timestamp']}")
+    if report_data is None:
+        st.error("❌ Report not found.")
+        return
 
-        st.divider()
+    report_json = report_data.get("report_json", {})
+    if not isinstance(report_json, dict):
+        report_json = {}
 
-        st.markdown("### 📊 Result")
-        st.success(f"Verdict: **{report_data['verdict']}**")
-        st.metric("Overall Score", f"{report_data['overall_score']}/10")
-        st.metric("Plagiarism %", f"{report_data['plagiarism_percentage']}%")
+    verdict = report_json.get("verdict", "UNKNOWN")
+    overall_score = report_json.get("overall_score", 0)
+    plagiarism = report_json.get("plagiarism_percentage", 0)
 
-        st.divider()
+    summary_feedback = report_json.get("summary_feedback", "No feedback available.")
+    improvement_plan = report_json.get("improvement_plan", "No improvement plan available.")
 
-        st.markdown("### 🧾 Full JSON Report")
-        import json
-        st.code(json.dumps(report_data["report_json"], indent=4), language="json")
+    strengths = report_json.get("strengths", [])
+    weaknesses = report_json.get("weaknesses", [])
+    question_wise = report_json.get("question_wise", [])
 
+    st.markdown("## 👤 Candidate Profile")
+    col1, col2, col3 = st.columns(3)
 
-        st.divider()
+    with col1:
+        st.info(f"**Name:** {report_data['candidate_name']}")
 
-        st.subheader("📄 Download PDF")
+    with col2:
+        st.info(f"**Role:** {report_data['role']}")
 
-        pdf_bytes = generate_pdf_report(
-            report_data["candidate_name"],
-            report_data["role"],
-            report_data["difficulty"],
-            report_data["interview_type"],
-            report_data["report_json"]
-        )
+    with col3:
+        st.info(f"**Difficulty:** {report_data['difficulty']}")
 
-        st.download_button(
-            label="⬇️ Download PDF Report",
-            data=pdf_bytes,
-            file_name=f"{report_data['candidate_name']}_AI_Report.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+    st.write(f"📌 **Interview Type:** {report_data['interview_type']}")
+    st.write(f"🎤 **Mode:** {report_data['mode']}")
+    st.write(f"🕒 **Timestamp:** {report_data['timestamp']}")
 
-        st.divider()
+    st.divider()
 
-        st.subheader("🗑️ Delete Candidate Report")
+    # ---------------- SCORE CARDS ----------------
+    st.markdown("## 📊 Final Evaluation Summary")
 
-        confirm = st.checkbox("I confirm delete permanently")
+    colA, colB, colC = st.columns(3)
 
-        if st.button("🗑️ Delete Report", use_container_width=True):
-            if not confirm:
-                st.error("❌ Please confirm deletion checkbox first.")
-            else:
-                delete_report(report_id)
-                st.success("✅ Report deleted!")
-                st.rerun()
+    with colA:
+        if "HIRE" in verdict:
+            st.success(f"🏆 Verdict: {verdict}")
+        elif "AI DETECTED" in verdict:
+            st.error(f"🤖 Verdict: {verdict}")
+        else:
+            st.warning(f"❌ Verdict: {verdict}")
+
+    with colB:
+        st.metric("Overall Score", f"{overall_score}/10")
+
+    with colC:
+        st.metric("Plagiarism %", f"{plagiarism}%")
+
+    st.divider()
+
+    # ---------------- FEEDBACK CARDS ----------------
+    st.markdown("## 🧠 Summary Feedback")
+    st.success(summary_feedback)
+
+    st.markdown("## 📌 Improvement Plan")
+    st.info(improvement_plan)
+
+    st.divider()
+
+    # ---------------- STRENGTHS / WEAKNESSES ----------------
+    colS, colW = st.columns(2)
+
+    with colS:
+        st.markdown("## ✅ Strengths")
+        if strengths and isinstance(strengths, list):
+            for s in strengths:
+                st.markdown(f"🟢 **{s}**")
+        else:
+            st.write("No strengths detected.")
+
+    with colW:
+        st.markdown("## ❌ Weaknesses")
+        if weaknesses and isinstance(weaknesses, list):
+            for w in weaknesses:
+                st.markdown(f"🔴 **{w}**")
+        else:
+            st.write("No weaknesses detected.")
+
+    st.divider()
+
+    # ---------------- QUESTION WISE TABLE ----------------
+    st.markdown("## 📋 Question Wise Evaluation")
+
+    if isinstance(question_wise, list) and len(question_wise) > 0:
+        q_df = pd.DataFrame(question_wise)
+
+        # Rename for cleaner UI
+        q_df = q_df.rename(columns={
+            "candidate_answer": "Candidate Answer",
+            "ideal_answer": "Ideal Answer",
+            "score": "Score",
+            "feedback": "Feedback",
+            "improvement": "Improvement",
+            "question": "Question"
+        })
+
+        st.dataframe(q_df, use_container_width=True)
+    else:
+        st.warning("No question wise evaluation found.")
+
+    st.divider()
+
+    # ---------------- PDF DOWNLOAD ----------------
+    st.subheader("📄 Download PDF Report")
+
+    pdf_bytes = generate_pdf_report(
+        report_data["candidate_name"],
+        report_data["role"],
+        report_data["difficulty"],
+        report_data["interview_type"],
+        report_json
+    )
+
+    st.download_button(
+        label="⬇️ Download Candidate PDF Report",
+        data=pdf_bytes,
+        file_name=f"{report_data['candidate_name']}_AI_Report.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # ---------------- DELETE ----------------
+    st.subheader("🗑️ Delete Candidate Report")
+    st.warning("⚠️ Deleting is permanent and cannot be undone.")
+
+    confirm = st.checkbox("Yes I confirm delete")
+
+    if st.button("🗑️ Delete This Report", use_container_width=True):
+        if not confirm:
+            st.error("❌ Please confirm deletion first.")
+        else:
+            delete_report(report_id)
+            st.success("✅ Report deleted successfully!")
+            st.rerun()
