@@ -1,0 +1,127 @@
+body {
+    background: radial-gradient(circle at top left, #0ea5e9, transparent 45%),
+                radial-gradient(circle at bottom right, #a855f7, transparent 45%),
+                radial-gradient(circle at center, #22c55e, transparent 55%),
+                #050914;
+    font-family: 'Segoe UI', sans-serif;
+    color: white;
+}
+
+.main-title {
+    font-size: 60px;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 15px;
+    background: linear-gradient(90deg, #38bdf8, #a855f7, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: #cbd5e1;
+    margin-top: -10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* ===============================
+   GEMINI ORB ANIMATION
+================================ */
+.orb-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 35px;
+    margin-bottom: 35px;
+}
+
+.orb {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #a855f7, #22c55e);
+    box-shadow: 0px 0px 40px rgba(56, 189, 248, 0.6),
+                0px 0px 80px rgba(168, 85, 247, 0.6),
+                0px 0px 120px rgba(34, 197, 94, 0.5);
+    animation: pulseGlow 2.5s infinite ease-in-out;
+    position: relative;
+}
+
+.orb::after {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(20px);
+}
+
+@keyframes pulseGlow {
+    0% {
+        transform: scale(1);
+        filter: blur(0px);
+    }
+    50% {
+        transform: scale(1.12);
+        filter: blur(1px);
+    }
+    100% {
+        transform: scale(1);
+        filter: blur(0px);
+    }
+}
+
+/* ===============================
+   AI SPEAKING TEXT
+================================ */
+.ai-speaking {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 900;
+    color: #38bdf8;
+    text-shadow: 0px 0px 12px rgba(56, 189, 248, 0.7);
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.ai-subtext {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-bottom: 25px;
+}
+
+/* ===============================
+   INFO BOX (NEON CARD)
+================================ */
+.neon-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0px 0px 35px rgba(56, 189, 248, 0.2);
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+/* Make Streamlit widgets look better */
+div[data-testid="stTextInput"] input {
+    border-radius: 12px !important;
+    padding: 12px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+}
+
+div[data-testid="stFileUploader"] {
+    border-radius: 14px !important;
+}
+
+button {
+    border-radius: 14px !important;
+    font-weight: 900 !important;
+    font-size: 16px !important;
+}

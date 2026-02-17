@@ -1,0 +1,12 @@
+streamlit
+groq
+pandas
+plotly
+altair
+pdfplumber
+python-docx
+PyPDF2
+streamlit-mic-recorder
+gTTS
+reportlab
+
