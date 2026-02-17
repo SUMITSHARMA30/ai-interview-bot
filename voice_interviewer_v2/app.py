@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import tempfile
+
 from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 
@@ -8,15 +9,14 @@ from utils.resume_parser import extract_text
 from interviewer_engine import generate_next_question
 from evaluator_v2 import evaluate_interview
 from voice_engine import text_to_speech
+from audio_utils import silence_detected
 
 
-# ---------------- CONFIG ----------------
 st.set_page_config(page_title="Voice Interviewer V2", layout="wide")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-# ---------------- CSS LOADER ----------------
 def load_css():
     try:
         with open("styles.css") as f:
@@ -28,7 +28,6 @@ def load_css():
 load_css()
 
 
-# ---------------- SPEECH TO TEXT ----------------
 def transcribe_audio(audio_path):
     with open(audio_path, "rb") as f:
         transcription = client.audio.transcriptions.create(
@@ -38,7 +37,30 @@ def transcribe_audio(audio_path):
     return transcription.text
 
 
-# ---------------- PHASE PLAN ----------------
+def init_session():
+    defaults = {
+        "resume_text": "",
+        "candidate_name": "",
+        "conversation": "",
+        "current_question": "",
+        "phase": "INTRO",
+        "started": False,
+        "ended": False,
+        "phase_question_count": 0,
+        "total_question_count": 0,
+        "last_audio_played_for": "",
+        "orb_state": "idle",
+        "silence_count": 0
+    }
+
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+
+init_session()
+
+
 PHASE_PLAN = {
     "INTRO": 1,
     "RESUME_DEEP_DIVE": 2,
@@ -52,38 +74,6 @@ PHASE_PLAN = {
 PHASE_ORDER = list(PHASE_PLAN.keys())
 
 
-# ---------------- SESSION INIT ----------------
-def init_session():
-    defaults = {
-        "resume_text": "",
-        "candidate_name": "",
-        "conversation": "",
-        "current_question": "",
-        "phase": "INTRO",
-        "started": False,
-        "ended": False,
-        "phase_question_count": 0,
-        "total_question_count": 0,
-        "last_audio_played_for": "",
-        "mic_key": 0
-    }
-
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-
-init_session()
-
-
-# ---------------- RESET ----------------
-def reset_all():
-    for k in list(st.session_state.keys()):
-        del st.session_state[k]
-    st.rerun()
-
-
-# ---------------- PHASE SWITCH ----------------
 def move_to_next_phase():
     current = st.session_state.phase
     idx = PHASE_ORDER.index(current)
@@ -95,32 +85,33 @@ def move_to_next_phase():
         st.session_state.ended = True
 
 
-# ---------------- SILENCE CHECK ----------------
-def is_silence(text: str):
-    if text is None:
-        return True
-    cleaned = text.strip()
-    if len(cleaned) < 3:
-        return True
-    if len(cleaned.split()) < 2:
-        return True
-    return False
+def next_question():
+    q = generate_next_question(
+        st.session_state.resume_text,
+        st.session_state.conversation,
+        st.session_state.phase
+    )
+
+    st.session_state.current_question = q
+    st.session_state.conversation += f"\nInterviewer: {q}\n"
+    st.session_state.phase_question_count += 1
+    st.session_state.total_question_count += 1
+
+    # Phase complete?
+    if st.session_state.phase_question_count >= PHASE_PLAN[st.session_state.phase]:
+        move_to_next_phase()
 
 
-# ---------------- UI HEADER ----------------
+# ---------------- UI ----------------
 st.markdown("<h1 class='main-title'>🎤 Voice Interviewer V2</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>Gemini Style AI Interview (Real MAANG Flow)</p>", unsafe_allow_html=True)
+st.markdown("<p class='subtitle'>Real MAANG Style AI Voice Interview Experience</p>", unsafe_allow_html=True)
 st.divider()
 
 
-# ==========================================================
-# START PAGE
-# ==========================================================
+# ---------------- START SCREEN ----------------
 if not st.session_state.started:
 
-    st.subheader("👤 Candidate Details")
-
-    st.session_state.candidate_name = st.text_input("Candidate Name", value=st.session_state.candidate_name)
+    st.session_state.candidate_name = st.text_input("Candidate Name")
 
     uploaded_file = st.file_uploader("Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
 
@@ -128,177 +119,123 @@ if not st.session_state.started:
         st.session_state.resume_text = extract_text(uploaded_file)
         st.success("✅ Resume parsed successfully!")
 
-    st.divider()
-
-    st.markdown("""
-        <div class="neon-card">
-            ⚡ Interview will feel like a real MAANG interviewer <br>
-            🎤 Speak naturally after the AI question is spoken <br>
-            🧠 Silence / weak answers will trigger follow-up or next question
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-
     if st.button("🚀 Start Interview", use_container_width=True):
 
         if not st.session_state.candidate_name.strip():
-            st.warning("⚠️ Enter candidate name.")
+            st.warning("Enter candidate name.")
             st.stop()
 
         if not st.session_state.resume_text.strip():
-            st.warning("⚠️ Upload resume first.")
+            st.warning("Upload resume first.")
             st.stop()
 
         st.session_state.started = True
         st.session_state.phase = "INTRO"
         st.session_state.phase_question_count = 0
         st.session_state.total_question_count = 0
-        st.session_state.conversation = ""
 
-        q = generate_next_question(
-            st.session_state.resume_text,
-            st.session_state.conversation,
-            st.session_state.phase
-        )
-
-        st.session_state.current_question = q
-        st.session_state.conversation += f"\nInterviewer: {q}\n"
-
+        next_question()
         st.rerun()
 
 
-# ==========================================================
-# INTERVIEW LOOP (GEMINI STYLE UI)
-# ==========================================================
+# ---------------- INTERVIEW LOOP ----------------
 if st.session_state.started and not st.session_state.ended:
 
-    st.markdown(f"### 🧠 Phase: `{st.session_state.phase}`")
-    st.markdown(f"### 🔥 Question {st.session_state.total_question_count + 1}")
+    # Orb UI
+    orb_class = "orb"
+    if st.session_state.orb_state == "speaking":
+        orb_class += " speaking"
+    elif st.session_state.orb_state == "listening":
+        orb_class += " listening"
 
-    st.markdown("""
+    st.markdown(f"""
         <div class="orb-container">
-            <div class="orb"></div>
+            <div class="{orb_class}"></div>
         </div>
-        <div class="ai-speaking">AI Interviewer is speaking...</div>
-        <div class="ai-subtext">Listen carefully, then answer naturally 🎧</div>
+        <div class="status-text">
+            Phase: {st.session_state.phase}
+        </div>
     """, unsafe_allow_html=True)
 
-    # AUTO SPEAK QUESTION
+    # Auto speak question once
     if st.session_state.last_audio_played_for != st.session_state.current_question:
+        st.session_state.orb_state = "speaking"
+
         audio_file = text_to_speech(st.session_state.current_question)
         st.audio(audio_file, format="audio/mp3", autoplay=True)
+
         st.session_state.last_audio_played_for = st.session_state.current_question
+        st.session_state.orb_state = "listening"
 
     st.divider()
 
-    st.subheader("🎤 Speak Your Answer (Recording)")
-
-    # Only mic recorder (no extra button)
+    # Candidate recording (only 1 mic component)
     audio = mic_recorder(
-        start_prompt="🎙️ Start Speaking",
+        start_prompt="🎙️ Speak Now",
         stop_prompt="⏹️ Stop",
-        key=f"mic_{st.session_state.mic_key}"
+        key=f"mic_{st.session_state.total_question_count}"
     )
 
-    st.divider()
-
-    if st.button("🛑 End Interview Now", use_container_width=True):
-        st.session_state.ended = True
-        st.rerun()
-
-    # AUTO NEXT AFTER AUDIO
     if audio:
+        st.session_state.orb_state = "listening"
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
             f.write(audio["bytes"])
             audio_path = f.name
 
+        # Silence detection
+        silent, rms = silence_detected(audio["bytes"], silence_seconds=4, threshold=500)
+
         user_answer = transcribe_audio(audio_path)
 
-        # SILENCE HANDLING
-        if is_silence(user_answer):
-            st.warning("⚠️ No response detected. Moving to next question...")
+        # Add candidate answer
+        st.session_state.conversation += f"Candidate: {user_answer}\n"
 
-            silence_msg = "No response (silence / unclear answer)."
-            st.session_state.conversation += f"Candidate: {silence_msg}\n"
-
+        # Auto-next logic
+        if silent:
+            st.session_state.silence_count += 1
         else:
-            st.success("✅ Answer Captured")
-            st.write(user_answer)
-            st.session_state.conversation += f"Candidate: {user_answer}\n"
+            st.session_state.silence_count = 0
 
-        # Update counts
-        st.session_state.phase_question_count += 1
-        st.session_state.total_question_count += 1
-
-        # Phase complete?
-        if st.session_state.phase_question_count >= PHASE_PLAN[st.session_state.phase]:
-            move_to_next_phase()
-
-        # Ended?
-        if st.session_state.ended:
+        # If silence detected -> move next question
+        if st.session_state.silence_count >= 1:
+            st.session_state.silence_count = 0
+            next_question()
             st.rerun()
 
-        # Generate next question
-        q = generate_next_question(
-            st.session_state.resume_text,
-            st.session_state.conversation,
-            st.session_state.phase
-        )
 
-        st.session_state.current_question = q
-        st.session_state.conversation += f"\nInterviewer: {q}\n"
-
-        # refresh mic component
-        st.session_state.mic_key += 1
-
-        st.rerun()
-
-
-# ==========================================================
-# FINAL REPORT
-# ==========================================================
+# ---------------- FINAL REPORT ----------------
 if st.session_state.ended:
 
-    st.subheader("📊 Final Evaluation Report")
+    st.markdown("<h2 class='main-title'>📊 Final Interview Report</h2>", unsafe_allow_html=True)
+    st.divider()
 
     report = evaluate_interview(st.session_state.conversation)
 
-    verdict = report.get("verdict", "NO_HIRE")
-    score = report.get("overall_score", 0)
+    st.success(f"🏆 Verdict: {report.get('verdict', 'NO_HIRE')}")
+    st.metric("Overall Score", f"{report.get('overall_score', 0)}/10")
 
-    st.success(f"🏆 Verdict: {verdict}")
-    st.metric("Overall Score", f"{score}/10")
+    st.markdown("<div class='report-card'>", unsafe_allow_html=True)
 
-    st.divider()
-
-    st.markdown("### 🧠 Summary Feedback")
+    st.subheader("🧠 Summary Feedback")
     st.write(report.get("summary_feedback", ""))
 
-    st.markdown("### ✅ Strengths")
-    strengths = report.get("strengths", [])
-    if strengths:
-        for s in strengths:
-            st.markdown(f"- ✅ {s}")
-    else:
-        st.write("No strengths detected.")
+    st.subheader("✅ Strengths")
+    st.write(report.get("strengths", []))
 
-    st.markdown("### ❌ Weaknesses")
-    weaknesses = report.get("weaknesses", [])
-    if weaknesses:
-        for w in weaknesses:
-            st.markdown(f"- ❌ {w}")
-    else:
-        st.write("No weaknesses detected.")
+    st.subheader("❌ Weaknesses")
+    st.write(report.get("weaknesses", []))
 
-    st.markdown("### 📌 Improvement Plan")
+    st.subheader("📌 Improvement Plan")
     st.write(report.get("improvement_plan", ""))
 
-    st.divider()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("### 📝 Full Interview Transcript")
+    st.divider()
+    st.subheader("📝 Full Transcript")
     st.code(st.session_state.conversation)
 
     if st.button("🔁 Restart Interview", use_container_width=True):
-        reset_all()
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.rerun()

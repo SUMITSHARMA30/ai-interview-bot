@@ -11,4 +11,6 @@ gTTS
 reportlab
 elevenlabs
 edge-tts
+numpy
+pydub
 
