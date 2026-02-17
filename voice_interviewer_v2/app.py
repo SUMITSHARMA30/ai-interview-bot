@@ -171,37 +171,73 @@ if st.session_state.started and not st.session_state.ended:
 
     # Candidate recording (only 1 mic component)
     audio = mic_recorder(
-        start_prompt="🎙️ Speak Now",
-        stop_prompt="⏹️ Stop",
-        key=f"mic_{st.session_state.total_question_count}"
-    )
+    start_prompt="🎙️ Speak",
+    stop_prompt="⏹️ Stop",
+    key=f"mic_{st.session_state.total_question_count}"
+)
+
 
     if audio:
-        st.session_state.orb_state = "listening"
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-            f.write(audio["bytes"])
-            audio_path = f.name
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
+        f.write(audio["bytes"])
+        audio_path = f.name
 
-        # Silence detection
-        silent, rms = silence_detected(audio["bytes"], silence_seconds=4, threshold=500)
+    user_answer = transcribe_audio(audio_path).strip()
 
-        user_answer = transcribe_audio(audio_path)
+    # 🔥 silence detection by transcription
+    if len(user_answer.split()) < 3:
+        st.warning("🤫 No response detected. Moving to next question...")
 
-        # Add candidate answer
-        st.session_state.conversation += f"Candidate: {user_answer}\n"
+        st.session_state.conversation += "Candidate: (No response)\n"
 
-        # Auto-next logic
-        if silent:
-            st.session_state.silence_count += 1
-        else:
-            st.session_state.silence_count = 0
+        # phase question count update
+        st.session_state.phase_question_count += 1
+        st.session_state.total_question_count += 1
 
-        # If silence detected -> move next question
-        if st.session_state.silence_count >= 1:
-            st.session_state.silence_count = 0
-            next_question()
-            st.rerun()
+        # move to next phase if needed
+        if st.session_state.phase_question_count >= PHASE_PLAN[st.session_state.phase]:
+            move_to_next_phase()
+
+        # generate next question
+        q = generate_next_question(
+            st.session_state.resume_text,
+            st.session_state.conversation,
+            st.session_state.phase
+        )
+
+        st.session_state.current_question = q
+        st.session_state.conversation += f"\nInterviewer: {q}\n"
+
+        st.rerun()
+
+    # ✅ if valid answer
+    st.success("✅ Answer Recorded")
+    st.write(user_answer)
+
+    st.session_state.conversation += f"Candidate: {user_answer}\n"
+
+    st.session_state.phase_question_count += 1
+    st.session_state.total_question_count += 1
+
+    # move phase if completed
+    if st.session_state.phase_question_count >= PHASE_PLAN[st.session_state.phase]:
+        move_to_next_phase()
+
+    if st.session_state.ended:
+        st.rerun()
+
+    q = generate_next_question(
+        st.session_state.resume_text,
+        st.session_state.conversation,
+        st.session_state.phase
+    )
+
+    st.session_state.current_question = q
+    st.session_state.conversation += f"\nInterviewer: {q}\n"
+
+    st.rerun()
+
 
 
 # ---------------- FINAL REPORT ----------------
