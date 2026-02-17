@@ -9,4 +9,6 @@ PyPDF2
 streamlit-mic-recorder
 gTTS
 reportlab
+elevenlabs
+edge-tts
 
